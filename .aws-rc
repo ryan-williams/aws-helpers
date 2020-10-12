@@ -3,3 +3,13 @@ aws_profile() {
 }
 export -f aws_profile
 defn awp aws_profile
+
+defn ec2 aws ec2
+defn ecr aws ecr
+defn s3 aws s3
+
+aws_help() {
+  aws "$@" help
+}
+export -f aws_help
+defn ah aws_help
