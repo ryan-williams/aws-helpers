@@ -1,5 +1,9 @@
 aws_profile() {
-  export AWS_PROFILE="$1"
+  if [ $# -eq 0 ]; then
+    echo "$AWS_PROFILE"
+  else
+    export AWS_PROFILE="$1"
+  fi
 }
 export -f aws_profile
 defn awp aws_profile
