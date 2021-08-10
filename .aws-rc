@@ -17,3 +17,23 @@ aws_help() {
 }
 export -f aws_help
 defn ah aws_help
+
+defn asl aws s3 ls
+defn aslr aws s3 ls --recursive
+defn asy aws s3 sync
+defn asn aws s3 sync --dry-run
+
+aws_ecr_list() {
+  aws ecr describe-images --repository-name "$@"
+}
+export -f aws_ecr_list
+defn ael aws_ecr_list
+
+aws_ecr_list_n() {
+  n="$1"; shift
+  aws ecr describe-images --repository-name "$@" | jq -r ".imageDetails | map(select(has(\"imageTags\"))) | sort_by(.imagePushedAt) | .[-$n:]"
+}
+export -f aws_ecr_list_n
+defn aen aws_ecr_list_n
+defn ae5 aws_ecr_list_n 5
+defn ae10 aws_ecr_list_n 10
