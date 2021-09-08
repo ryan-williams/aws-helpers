@@ -20,8 +20,11 @@ defn ah aws_help
 
 defn asl aws s3 ls
 defn aslr aws s3 ls --recursive
+defn alr aws s3 ls --recursive
 defn asy aws s3 sync
-defn asn aws s3 sync --dry-run
+defn asn aws s3 sync --dryrun
+alias asi="aws s3 sync --exclude '*' --include"
+alias asni="aws s3 sync --dryrun --exclude '*' --include"
 
 aws_ecr_list() {
   aws ecr describe-images --repository-name "$@"
