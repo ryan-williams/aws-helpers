@@ -19,8 +19,11 @@ export -f aws_help
 defn ah aws_help
 
 defn asl aws s3 ls
+defn aslh aws s3 ls --human-readable
+defn ash aws s3 ls --human-readable
 defn aslr aws s3 ls --recursive
 defn alr aws s3 ls --recursive
+defn alrh aws s3 ls --recursive --human-readable
 defn asy aws s3 sync
 defn asn aws s3 sync --dryrun
 alias asi="aws s3 sync --exclude '*' --include"
