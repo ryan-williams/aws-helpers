@@ -37,9 +37,36 @@ defn ael aws_ecr_list
 
 aws_ecr_list_n() {
   n="$1"; shift
-  aws ecr describe-images --repository-name "$@" | jq -r ".imageDetails | map(select(has(\"imageTags\"))) | sort_by(.imagePushedAt) | .[-$n:]"
+  aws ecr describe-images --repository-name "$@" \
+  | jq "
+    .imageDetails |
+    map(select(has(\"imageTags\"))) |
+    sort_by(.imagePushedAt) |
+    .[-$n:] |
+    map({imageDigest,imageTags,imageSizeInBytes,imagePushedAt}) |
+    map(.imagePushedAt |= todate)
+  "
 }
 export -f aws_ecr_list_n
 defn aen aws_ecr_list_n
 defn ae5 aws_ecr_list_n 5
 defn ae10 aws_ecr_list_n 10
+
+policy_name_to_arn() {
+  aws iam list-policies | jq -r ".Policies[]|select(.PolicyName | contains(\"$1\"))|.Arn"
+}
+defn pnta policy_name_to_arn
+
+pipelines() {
+  aws codepipeline list-pipelines \
+  | jq '
+    .pipelines
+    | map(
+      .created |= todate |
+      .updated |= todate
+    )
+  '
+}
+export -f pipelines
+
+defn jobs aws batch describe-jobs --jobs
