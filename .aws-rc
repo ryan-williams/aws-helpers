@@ -83,3 +83,81 @@ ec2_state() {
     aws ec2 describe-instances --instance-ids "$@" | jq '.Reservations[] | .Instances[] | .State'
 }
 export -f ec2_state
+
+check_pipeline_execution() {
+    usage="get_pipeline_execution [[pipeline_name=\$pipeline_name] pipeline_execution_id=\$pipeline_execution_id]"
+    if [ $# -lt 2 ]; then
+        if [ -z "$pipeline_name" ]; then
+            echo "$usage" >&2
+            return 11
+        fi
+        if [ $# -lt 1 ]; then
+            if [ -z "$pipeline_execution_id" ]; then
+                echo "$usage" >&2
+                return 12
+            fi
+        else
+            pipeline_execution_id="$1"; shift
+        fi
+    elif [ $# -eq 2 ]; then
+        pipeline_name="$1"; shift
+        pipeline_execution_id="$1"; shift
+    else
+        echo "$usage" >&2
+        return 13
+    fi
+    local pipeline_execution="$(aws codepipeline get-pipeline-execution --pipeline-name "$pipeline_name" --pipeline-execution-id "$pipeline_execution_id" | jq .pipelineExecution)"
+    echo "$pipeline_execution"
+    local status="$(echo "$pipeline_execution" | jq -r .status)"
+    if [ "$status" == "InProgress" ]; then
+        return 0
+    else
+        echo 'done!'
+        return 1
+    fi
+}
+export -f check_pipeline_execution
+defn cpe check_pipeline_execution
+
+start_and_poll_pipeline() {
+    if [ $# -eq 0 ]; then
+        if [ -z "$pipeline_name" ]; then
+            echo "$usage" >&2
+            return 11
+        fi
+    elif [ $# -eq 1 ]; then
+        pipeline_name="$1"; shift
+    else
+        echo "$usage" >&2
+        return 12
+    fi
+    export pipeline_name
+    export pipeline_execution_id="$(aws codepipeline start-pipeline-execution --name "$pipeline_name" | tee >(cat >&2) | jq -r '.pipelineExecutionId')"
+    sleep 1
+    watch -n5 -e check_pipeline_execution
+}
+export -f start_and_poll_pipeline
+defn sapp start_and_poll_pipeline
+
+if which aws_completer &>/dev/null; then
+    complete -C "$(which aws_completer)" aws
+fi
+
+# aws s3 mb s3://$bkt
+# aws s3api put-bucket-acl --bucket $bkt --acl public-read
+# aws s3api put-bucket-policy --bucket $bkt --policy "$(cat public-bucket-policy.json)"
+# aws s3api put-bucket-website --bucket $bkt --website-configuration file://website.json
+
+pipeline_executions() {
+    if [ $# -ne 1 ]; then
+        echo "Usage: pipeline_executions <pipeline name>" >&2
+    fi
+    aws codepipeline list-pipeline-executions --pipeline-name "$1" \
+    | jq \
+        ' .pipelineExecutionSummaries
+        | map(.startTime |= todate)
+        | map(.lastUpdateTime |= todate)
+        '
+}
+export -f pipeline_executions
+defn pes pipeline_executions
