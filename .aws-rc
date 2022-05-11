@@ -161,3 +161,6 @@ pipeline_executions() {
 }
 export -f pipeline_executions
 defn pes pipeline_executions
+
+defn cbp codebuild_projects.py -v
+defn cbpl codebuild_projects.py
