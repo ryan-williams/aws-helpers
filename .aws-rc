@@ -168,3 +168,6 @@ defn cbpl codebuild.py projects
 defn cbb codebuild.py builds
 defn cbbl codebuild.py builds list
 defn cbblt codebuild.py builds latest
+
+defn cpl codepipeline.py
+defn cplv codepipeline.py -v

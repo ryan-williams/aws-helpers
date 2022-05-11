@@ -12,12 +12,17 @@ def codepipeline():
 
 @codepipeline.command('list')
 @option('-f', '--fullmatch', required=False, is_flag=True, help='Use re.fullmatch instead of re.search when matching <regex> argument(s)')
+@option('-v', '--verbose', required=False, is_flag=True, help='Print project details')
 @argument('regexs', required=False, nargs=-1)
-def list(fullmatch, regexs):
-    print(regexs)
+def list(fullmatch, verbose, regexs):
     client = boto3.client('codepipeline')
     all_pipelines = client.list_pipelines()['pipelines']
     pipelines = rgx_filter(all_pipelines, fullmatch=fullmatch, regexs=regexs, key='name')
+    if verbose:
+        pipelines = [
+            client.get_pipeline(name=pipeline['name'])['pipeline']
+            for pipeline in pipelines
+        ]
     print(to_json(pipelines))
 
 
