@@ -166,8 +166,12 @@ defn cdb codebuild.py
 defn cbp codebuild.py projects -v
 defn cbpl codebuild.py projects
 defn cbb codebuild.py builds
-defn cbbl codebuild.py builds list
-defn cbblt codebuild.py builds latest
+defn cbbl codebuild.py builds latest
+defn cbblv codebuild.py builds latest -v
+defn cbbls codebuild.py builds list
+defn cbblsv codebuild.py builds list -v
+defn cbblsvv codebuild.py builds list -vv
+defn cbbg codebuild.py builds logs
 
-defn cpl codepipeline.py
-defn cplv codepipeline.py -v
+defn cpl codepipeline.py list
+defn cplv codepipeline.py list -v

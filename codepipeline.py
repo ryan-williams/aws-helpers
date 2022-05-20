@@ -10,6 +10,7 @@ from aws_utils import to_json, rgx_filter
 def codepipeline():
     pass
 
+
 @codepipeline.command('list')
 @option('-f', '--fullmatch', required=False, is_flag=True, help='Use re.fullmatch instead of re.search when matching <regex> argument(s)')
 @option('-v', '--verbose', required=False, is_flag=True, help='Print project details')
