@@ -165,6 +165,7 @@ defn pes pipeline_executions
 defn cdb codebuild.py
 defn cbp codebuild.py projects -v
 defn cbpl codebuild.py projects
+defn cbpls codebuild.py projects list
 defn cbb codebuild.py builds
 defn cbbl codebuild.py builds latest
 defn cbblv codebuild.py builds latest -v

@@ -4,7 +4,7 @@ import boto3
 from click import argument, option, group
 from sys import stderr
 
-from aws_utils import to_json, rgx_filter
+from aws_utils import to_json, rgx_filter, get_page, founds
 
 
 codebuild = boto3.client('codebuild')
@@ -15,74 +15,85 @@ def main():
     pass
 
 
-@main.command('projects')
+@main.group('projects')
+def projects(): pass
+
+
+@projects.command('list')
 @option('-v', '--verbose', required=False, is_flag=True, help='Print project details')
 @option('-f', '--fullmatch', required=False, is_flag=True, help='Use re.fullmatch instead of re.search when matching <regex> argument(s)')
 @argument('regexs', required=False, nargs=-1)
-def projects(verbose, fullmatch, regexs):
+def projects_list(verbose, fullmatch, regexs):
     all_project_names = codebuild.list_projects()['projects']
-
     project_names = rgx_filter(all_project_names, fullmatch=fullmatch, regexs=regexs)
     if not project_names:
-        raise RuntimeError(f'No projects found matching {regexs}')
+        return
+        # raise RuntimeError(f'No projects found matching {regexs}')
 
     if verbose:
-        resp = codebuild.batch_get_projects(names=project_names)
-        projects = resp['projects']
-        projectsNotFound = resp['projectsNotFound']
-        if projectsNotFound:
-            raise RuntimeError("Didn't find projects:\n\t%s" % '\n\t'.join(projectsNotFound))
+        projects = founds(codebuild.batch_get_projects(names=project_names), 'projects')
         print(to_json(projects))
     else:
         print('\n'.join(project_names))
+
+
+BUILD_SUMMARY_KEYS = [ 'id', 'startTime', 'endTime', 'buildStatus', ]
+
+
+def get_build_summaries(builds):
+    return [
+        { k: build[k] for k in BUILD_SUMMARY_KEYS }
+        for build in builds
+    ]
+
+
+def get_builds_for_project(verbose, max_num, project_name):
+    build_ids = get_page(codebuild, 'list_builds_for_project', max_num, projectName=project_name)['ids']
+    if not build_ids:
+        return []
+    builds = founds(codebuild.batch_get_builds(ids=build_ids), 'builds')
+    if not verbose:
+        builds = get_build_summaries(builds)
+    return builds
+
+
+@projects.command('builds')
+@option('-v', '--verbose', count=True, help='0 (default): print build IDs only; 1 ("-v"): print {id, startTime, buildStatus}; 2 ("-vv"): print full build objects')
+@option('-n', '--max-num', type=int, help='Maximum number of builds to list')
+@argument('project_name')
+def project_builds(verbose, max_num, project_name):
+    builds = get_builds_for_project(verbose=verbose == 2, max_num=max_num, project_name=project_name)
+    if verbose:
+        print(to_json(builds))
+    else:
+        ids = [ build['id'] for build in builds ]
+        print('\n'.join(ids))
 
 
 @main.group('builds')
 def builds(): pass
 
 
-def get_page(cmd, max_num, **kwargs):
-    paginator = codebuild.get_paginator(cmd)
-    page_iterator = paginator.paginate(
-        **kwargs,
-        PaginationConfig={ 'MaxItems': max_num if max_num else None },
-    )
-    page = next(page for page in page_iterator)
-    return page
-
-
-def founds(resp, key, not_found_key=None):
-    not_found_key = not_found_key if not_found_key else f'{key}NotFound'
-    not_founds = resp[not_found_key]
-    if not_founds:
-        raise RuntimeError("%s:\n%s" % (not_found_key, to_json(not_founds)))
-    return resp[key]
-
-
-def get_builds(verbose, max_num, project_name):
-    build_ids = get_page('list_builds_for_project', max_num, projectName=project_name)['ids']
-    if not build_ids:
-        return []
-    builds = founds(codebuild.batch_get_builds(ids=build_ids), 'builds')
-    if not verbose:
-        builds = [
-            { k: build[k] for k in [ 'id', 'startTime', 'buildStatus', ] }
-            for build in builds
-        ]
-    return builds
-
-
 @builds.command('list')
-@option('-v', '--verbose', count=True, help='0 (default): print build IDs only; 1 ("-v"): print {id, startTime, buildStatus}; 2 ("-vv"): print full build objects')
-@option('-n', '--max-num', type=int, help='Maximum number of builds to list')
-@argument('project_name')
-def list(verbose, max_num, project_name):
-    builds = get_builds(verbose=verbose == 2, max_num=max_num, project_name=project_name)
+@option('-v', '--verbose', required=False, count=True, help='Print build details')
+@option('-f', '--fullmatch', required=False, is_flag=True, help='Use re.fullmatch instead of re.search when matching <regex> argument(s)')
+@argument('regexs', required=False, nargs=-1)
+def builds_list(verbose, fullmatch, regexs):
+    all_build_ids = codebuild.list_builds()['ids']
+    build_ids = rgx_filter(all_build_ids, fullmatch=fullmatch, regexs=regexs)
+    if not build_ids:
+        return
+        # raise RuntimeError(f'No projects found matching {regexs}')
+
     if verbose:
-        print(to_json(builds))
+        builds = founds(codebuild.batch_get_builds(ids=build_ids), 'builds')
+        if verbose == 1:
+            build_summaries = get_build_summaries(builds)
+            print(to_json(build_summaries))
+        else:
+            print(to_json(builds))
     else:
-        ids = [ build['id'] for build in builds ]
-        print('\n'.join(ids))
+        print('\n'.join(build_ids))
 
 
 @builds.command('latest')
@@ -91,7 +102,7 @@ def list(verbose, max_num, project_name):
 def latest(verbose, project_names):
     builds_dict = {}
     for project_name in project_names:
-        project_builds = get_builds(verbose=verbose == 2, max_num=1, project_name=project_name)
+        project_builds = get_builds_for_project(verbose=verbose == 2, max_num=1, project_name=project_name)
         if len(project_builds) == 1:
             builds_dict[project_name] = project_builds[0]
         elif not project_builds:
