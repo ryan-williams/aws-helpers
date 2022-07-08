@@ -84,6 +84,17 @@ ec2_state() {
 }
 export -f ec2_state
 
+watch_ec2_state() {
+    watch ec2_state "$@"
+}
+export -f watch_ec2_state
+
+wait_ec2_state() {
+    watch ec2_state "$@"
+}
+export -f wait_ec2_state
+defn wes wait_ec2_state
+
 check_pipeline_execution() {
     usage="get_pipeline_execution [[pipeline_name=\$pipeline_name] pipeline_execution_id=\$pipeline_execution_id]"
     if [ $# -lt 2 ]; then
