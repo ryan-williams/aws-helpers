@@ -10,6 +10,8 @@ defn awp aws_profile
 
 defn ec2 aws ec2
 defn ecr aws ecr
+defn ecrc aws ecr create-repository --repository-name
+defn ecrd aws ecr delete-repository --repository-name
 defn s3 aws s3
 
 aws_help() {
