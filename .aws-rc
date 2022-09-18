@@ -177,8 +177,8 @@ defn pes pipeline_executions
 
 defn cdb codebuild.py
 defn cbp codebuild.py projects -v
-defn cbpl codebuild.py projects
-defn cbpls codebuild.py projects list
+defn cbpl codebuild.py projects list
+defn cbplv codebuild.py projects list -v
 defn cbb codebuild.py builds
 defn cbbl codebuild.py builds latest
 defn cbblv codebuild.py builds latest -v
@@ -189,3 +189,8 @@ defn cbbg codebuild.py builds logs
 
 defn cpl codepipeline.py list
 defn cplv codepipeline.py list -v
+defn cpel codepipeline.py executions list
+defn cpelv codepipeline.py executions list -v
+defn cpelvh codepipeline.py executions list -vn10
+defn cpelvv codepipeline.py executions list -vv
+defn cpelvv1 codepipeline.py executions list -vvn1
