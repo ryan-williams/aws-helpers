@@ -26,10 +26,13 @@ defn ash aws s3 ls --human-readable
 defn aslr aws s3 ls --recursive
 defn alr aws s3 ls --recursive
 defn alrh aws s3 ls --recursive --human-readable
+
 defn asy aws s3 sync
 defn asn aws s3 sync --dryrun
+alias asx="aws s3 sync --exclude '*'"
+alias asxn="aws s3 sync --exclude '*' --dryrun"
 alias asi="aws s3 sync --exclude '*' --include"
-alias asni="aws s3 sync --dryrun --exclude '*' --include"
+alias asin="aws s3 sync --dryrun --exclude '*' --include"
 
 aws_ecr_list() {
   aws ecr describe-images --repository-name "$@"
@@ -194,3 +197,5 @@ defn cpelv codepipeline.py executions list -v
 defn cpelvh codepipeline.py executions list -vn10
 defn cpelvv codepipeline.py executions list -vv
 defn cpelvv1 codepipeline.py executions list -vvn1
+
+defn ed2t ecr-digest-to-tags
