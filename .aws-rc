@@ -27,6 +27,10 @@ defn aslr aws s3 ls --recursive
 defn alr aws s3 ls --recursive
 defn alrh aws s3 ls --recursive --human-readable
 
+defn arm aws s3 rm
+defn armr aws s3 rm --recursive
+
+defn acp aws s3 cp
 defn asy aws s3 sync
 defn asn aws s3 sync --dryrun
 alias asx="aws s3 sync --exclude '*'"
