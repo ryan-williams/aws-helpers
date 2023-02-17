@@ -61,6 +61,9 @@ defn aen aws_ecr_list_n
 defn ae5 aws_ecr_list_n 5
 defn ae10 aws_ecr_list_n 10
 
+defn els ecr-layer-sizes.py
+defn elsh ecr-layer-sizes.py -h
+
 policy_name_to_arn() {
   aws iam list-policies | jq -r ".Policies[]|select(.PolicyName | contains(\"$1\"))|.Arn"
 }
