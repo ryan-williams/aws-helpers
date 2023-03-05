@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+path="$1"
+if [ "${path#s3://}" == "$path" ]; then
+    path="s3://$path"
+fi
+aws s3 cp "$path" -

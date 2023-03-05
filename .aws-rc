@@ -10,6 +10,9 @@ defn awp aws_profile
 
 defn ec2 aws ec2
 defn ecr aws ecr
+defn aesi aws ec2 start-instances --instance-ids
+defn aepi aws ec2 stop-instances --instance-ids
+defn aedi aws ec2 describe-instances
 defn ecrc aws ecr create-repository --repository-name
 defn ecrd aws ecr delete-repository --repository-name
 defn s3 aws s3
@@ -31,12 +34,21 @@ defn arm aws s3 rm
 defn armr aws s3 rm --recursive
 
 defn acp aws s3 cp
+defn asc aws-s3-cat
 defn asy aws s3 sync
+defn asz aws s3 sync --size-only
 defn asn aws s3 sync --dryrun
+defn asnz aws s3 sync --dryrun --size-only
 alias asx="aws s3 sync --exclude '*'"
+alias aszx="aws s3 sync --size-only --exclude '*'"
 alias asxn="aws s3 sync --exclude '*' --dryrun"
+alias asnx="aws s3 sync --dryrun --exclude '*'"
+alias asnzx="aws s3 sync --dryrun --size-only --exclude '*'"
 alias asi="aws s3 sync --exclude '*' --include"
 alias asin="aws s3 sync --dryrun --exclude '*' --include"
+alias asni="aws s3 sync --dryrun --exclude '*' --include"
+alias asnzi="aws s3 sync --dryrun --size-only --exclude '*' --include"
+alias aszi="aws s3 sync --size-only --exclude '*' --include"
 
 aws_ecr_list() {
   aws ecr describe-images --repository-name "$@"
@@ -90,6 +102,15 @@ check_buckets() {
   | uniq \
   | parallel 'aws s3 ls {} &>/dev/null && echo "Success: {}" || echo "Failure: {}"'
 }
+
+ec2_instances() {
+    aws ec2 describe-instances | jq '
+        .Reservations[0].Instances |
+        map({ InstanceId, PublicDnsName, InstanceType, KeyName, State: .State.Name })
+    '
+}
+export -f ec2_instances
+defn aei ec2_instances
 
 ec2_state() {
     aws ec2 describe-instances --instance-ids "$@" | jq '.Reservations[] | .Instances[] | .State'
