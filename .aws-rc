@@ -12,7 +12,8 @@ defn ec2 aws ec2
 defn ecr aws ecr
 defn aesi aws ec2 start-instances --instance-ids
 defn aepi aws ec2 stop-instances --instance-ids
-defn aedi aws ec2 describe-instances
+defn aed aws ec2 describe-instances
+defn aedi aws ec2 describe-instances --instance-ids
 defn ecrc aws ecr create-repository --repository-name
 defn ecrd aws ecr delete-repository --repository-name
 defn s3 aws s3
@@ -104,18 +105,30 @@ check_buckets() {
 }
 
 ec2_instances() {
-    aws ec2 describe-instances | jq '
-        .Reservations[0].Instances |
-        map({ InstanceId, PublicDnsName, InstanceType, KeyName, State: .State.Name })
+    if [ $# -gt 0 ]; then
+        args=(--instance-ids)
+        args+=("$@")
+    else
+        args=()
+    fi
+    aws ec2 describe-instances "${args[@]}" | jq '
+        .Reservations | map(
+            .Instances |
+            map({ InstanceId, PublicDnsName, InstanceType, KeyName, State: .State.Name })
+        )[]
     '
 }
 export -f ec2_instances
 defn aei ec2_instances
+defn ecl ec2_instances
+defn e2l ec2_instances
 
 ec2_state() {
     aws ec2 describe-instances --instance-ids "$@" | jq '.Reservations[] | .Instances[] | .State'
 }
 export -f ec2_state
+defn e2s ec2_state
+defn ecs ec2_state
 
 watch_ec2_state() {
     watch ec2_state "$@"
