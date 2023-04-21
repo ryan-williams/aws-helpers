@@ -10,10 +10,11 @@ defn awp aws_profile
 
 defn ec2 aws ec2
 defn ecr aws ecr
-defn aesi aws ec2 start-instances --instance-ids
-defn aepi aws ec2 stop-instances --instance-ids
 defn aed aws ec2 describe-instances
 defn aedi aws ec2 describe-instances --instance-ids
+defn aesi aws ec2 start-instances --instance-ids
+defn aepi aws ec2 stop-instances --instance-ids
+defn aeti aws ec2 terminate-instances --instance-ids
 defn ecrc aws ecr create-repository --repository-name
 defn ecrd aws ecr delete-repository --repository-name
 defn s3 aws s3
@@ -128,7 +129,6 @@ ec2_state() {
 }
 export -f ec2_state
 defn e2s ec2_state
-defn ecs ec2_state
 
 watch_ec2_state() {
     watch ec2_state "$@"
@@ -240,3 +240,122 @@ defn cpelvv codepipeline.py executions list -vv
 defn cpelvv1 codepipeline.py executions list -vvn1
 
 defn ed2t ecr-digest-to-tags
+
+defn tfn terraform
+defn tfa terraform apply
+defn tfd terraform destroy
+defn tfi terraform init
+defn tfp terraform plan
+defn tfpo terraform plan -o
+
+defn awai aws sts get-caller-identity
+defn agci aws sts get-caller-identity
+aws_account() {
+    aws sts get-caller-identity | jq -r .Account
+}
+export -f aws_account
+defn awa aws_account
+defn aws_region aws configure get region
+defn awr aws configure get region
+
+ami() {
+    if [ $# -eq 1 ]; then
+        ami_id="$1"; shift
+        aws ec2 describe-images --image-ids "$ami_id" | jq '.Images[0]'
+    else
+        aws ec2 describe-images --image-ids "$@"
+    fi
+}
+export -f ami
+
+amibdm() {
+    if [ $# -eq 1 ]; then
+        ami "$@" | jq .BlockDeviceMappings
+    else
+        ami "$@" | jq '.Images[] | {ImageId, BlockDeviceMappings}'
+    fi
+}
+export -f amibdm
+
+ami_filter() {
+    if [ $# -ne 2 ]; then
+        echo "Usage: $0 <Name> <Values>" >&2
+        return 1
+    fi
+    Name="$1"; shift
+    Values="$1"; shift
+    aws ec2 describe-images --filter "Name=$Name,Values=$Values"
+}
+export -f ami_filter
+defn amif ami_filter
+
+ami_name_to_id() {
+    if [ $# -ne 1 ]; then
+        echo "Usage: $0 <Name>" >&2
+        return 1
+    fi
+    name="$1"; shift
+    ami_filter name "$name" | jq -r '.Images[].ImageId'
+}
+export -f ami_name_to_id
+defn amin2i ami_name_to_id
+
+defn ads aws cloudformation describe-stacks
+aws_stack_names() {
+    aws cloudformation describe-stacks | jq -r '.Stacks[].StackName'
+}
+export -f aws_stack_names
+defn adsn aws_stack_names
+
+defn ab aws batch
+defn abjq aws batch describe-job-queues
+aws_batch_job_queue_names() {
+    aws batch describe-job-queues "$@" | jq -r '.jobQueues[].jobQueueName'
+}
+export -f aws_batch_job_queue_names
+defn abjqn aws_batch_job_queue_names
+
+defn abjd aws batch describe-job-definitions
+defn abjda aws batch describe-job-definitions --status ACTIVE
+aws_batch_job_definition_names() {
+    aws batch describe-job-definitions "$@" | jq -r '.jobDefinitions[].jobDefinitionName'
+}
+export -f aws_batch_job_definition_names
+defn abjdn aws_batch_job_definition_names
+defn abjdan aws_batch_job_definition_names --status ACTIVE
+
+defn abj aws batch list-jobs --job-queue
+
+defn ecs aws ecs
+
+ecs_list_clusters() {
+    aws ecs list-clusters | jq -r '.clusterArns[]'
+}
+export -f ecs_list_clusters
+defn ecslc ecs_list_clusters
+
+ecs_running_clusters() {
+    local ecs_clusters="$(aws ecs list-clusters | jr '.clusterArns[]')"
+    # echo $ecs_clusters
+    aws ecs describe-clusters --cluster $ecs_clusters | \
+    jq '.clusters[]|{clusterName,registeredContainerInstancesCount}|select(.registeredContainerInstancesCount > 0)'
+}
+export -f ecs_running_clusters
+defn ecsrc ecs_running_clusters
+
+ecs_list_container_instances() {
+    aws ecs list-container-instances --cluster "$@" | jq -r '.containerInstanceArns[]'
+}
+export -f ecs_list_container_instances
+defn ecslci ecs_list_container_instances
+
+ecs_describe_container_instances() {
+    local prefix="${1%%/*}"
+    prefix="${prefix%:container-instance}:cluster"
+    local cluster="${1%/*}"
+    cluster="$prefix/${cluster#*/}"
+    echo "cluster: $cluster" >&2
+    aws ecs describe-container-instances --cluster "$cluster" --container-instances "$@"
+}
+export -f ecs_describe_container_instances
+defn ecsdci ecs_describe_container_instances
