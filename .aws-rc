@@ -200,10 +200,38 @@ if which aws_completer &>/dev/null; then
     complete -C "$(which aws_completer)" aws
 fi
 
+## Public S3 bucket helpers
 # aws s3 mb s3://$bkt
-# aws s3api put-bucket-acl --bucket $bkt --acl public-read
 # aws s3api put-bucket-policy --bucket $bkt --policy "$(cat public-bucket-policy.json)"
+#
+# aws s3api put-bucket-acl --bucket $bkt --acl public-read
 # aws s3api put-bucket-website --bucket $bkt --website-configuration file://website.json
+
+aws_make_bucket() {
+    last="${@:(($#))}"
+    set -- "${@:1:$(($#-1))}"
+    if [ "${last#s3://}" == "$last" ]; then
+        last="s3://$last"
+    fi
+    aws s3 mb "$@" "$last"
+}
+export -f aws_make_bucket
+defn amb aws_make_bucket
+
+aws_make_bucket_public() {
+    if [ $# -ne 1 ]; then
+        echo "Usage: $0 <bkt>" >&2
+        return 1
+    fi
+    b="$1"; shift
+    policy_cmd=(aws s3api put-bucket-policy --bucket $b --policy "{\"Id\":\"s3://$b-public\",\"Statement\":[{\"Sid\":\"s3://$b-public\",\"Action\":[\"s3:GetObject\"],\"Effect\":\"Allow\",\"Resource\":\"arn:aws:s3:::$b/*\",\"Principal\":{\"AWS\":[\"*\"]}}]}")
+    echo "Running: ${policy_cmd[*]}"
+    "${policy_cmd[@]}"
+    # aws s3api put-bucket-website --bucket $bkt --website-configuration file://website.json
+    # aws s3api put-bucket-acl --bucket $b --acl public-read
+}
+export -f aws_make_bucket_public
+defn ambp aws_make_bucket_public
 
 pipeline_executions() {
     if [ $# -ne 1 ]; then
