@@ -37,6 +37,7 @@ defn armr aws s3 rm --recursive
 
 defn acp aws s3 cp
 defn asc aws-s3-cat
+defn s3c aws s3 cp
 defn asy aws s3 sync
 defn asz aws s3 sync --size-only
 defn asn aws s3 sync --dryrun
