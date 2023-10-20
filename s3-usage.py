@@ -41,6 +41,7 @@ def flatmap(self, func):
         dfs.append(df)
     return concat(dfs)
 
+
 DF.flatmap = flatmap
 
 
