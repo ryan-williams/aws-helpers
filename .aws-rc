@@ -29,7 +29,30 @@ defn asl aws s3 ls
 defn aslh aws s3 ls --human-readable
 defn ash aws s3 ls --human-readable
 defn aslr aws s3 ls --recursive
-defn alr aws s3 ls --recursive
+aws_s3_ls_recursive() {
+    flags=()
+    urls=()
+    for arg in "$@"; do
+        if [ "${arg:0:1}" == "-" ]; then
+            flags+=("$arg")
+        else
+            urls+=("$arg")
+        fi
+    done
+    if which parallel &>/dev/null; then
+        parallel aws s3 ls --recursive "${flags[@]}" ::: "${urls[@]}"
+    else
+        for url in "${urls[@]}"; do
+            aws s3 ls --recursive "${flags[@]}" "$arg"
+            rv=$?
+            if [ $rv -ne 0 ]; then
+                return $rv
+            fi
+        done
+    fi
+}
+export -f aws_s3_ls_recursive
+defn alr aws_s3_ls_recursive
 defn alrh aws s3 ls --recursive --human-readable
 
 defn arm aws s3 rm
