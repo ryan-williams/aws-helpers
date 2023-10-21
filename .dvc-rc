@@ -1,5 +1,10 @@
 alias dv=dvc
 alias dva="dvc add"
+alias dvcg="dvc config"
+alias dvcgct="dvc config cache.type"
+alias dvcgctl="dvc config cache.type reflink,symlink,hardlink,copy"
+alias dvco="dvc checkout"
+alias dvcorl="dvc checkout --relink"
 alias dvs="dvc data status"
 alias dvsg="dvc data status --granular"
 alias dvsu="dvc data status --unchanged"
