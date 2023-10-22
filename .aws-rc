@@ -148,6 +148,12 @@ defn aei ec2_instances
 defn ecl ec2_instances
 defn e2l ec2_instances
 
+ec2_dnsname() {
+    ec2_instances "$@" | jq -rs '.[-1][0].PublicDnsName'
+}
+export -f ec2_dnsname
+defn edn ec2_dnsname
+
 ec2_state() {
     aws ec2 describe-instances --instance-ids "$@" | jq '.Reservations[] | .Instances[] | .State'
 }
