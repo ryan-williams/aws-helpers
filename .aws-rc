@@ -55,6 +55,50 @@ export -f aws_s3_ls_recursive
 defn alr aws_s3_ls_recursive
 defn alrh aws s3 ls --recursive --human-readable
 
+instance() {
+    if [ $# -ne 1 ]; then
+        echo "Usage: $0 <instance id>" >&2
+        return 1
+    fi
+    aws ec2 describe-instances --instance-ids "$1" \
+        | jq .Reservations | singleton \
+        | jq .Instances | singleton
+}
+export -f instance
+
+instance_name() {
+    instance "$@" | jq -r '.Tags[] | select(.Key == "Name") | .Value'
+}
+export -f instance_name
+defn isn instance_name
+
+# Uses jq `singleton` helper from ../js
+instance_security_groups() {
+    instance "$@" \
+    | jq .NetworkInterfaces | singleton \
+    | jq .Groups
+}
+export -f instance_security_groups
+defn isgs instance_security_groups
+
+instance_security_group() {
+    instance_security_groups "$@" | singleton
+}
+export -f instance_security_group
+defn isg instance_security_group
+
+instance_security_group_id() {
+    instance_security_group "$@" | jq -r '.GroupId'
+}
+export -f instance_security_group_id
+defn isgi instance_security_group_id
+
+instance_security_group_name() {
+    instance_security_group "$@" | jq -r '.GroupName'
+}
+export -f instance_security_group_name
+defn isgn instance_security_group_name
+
 defn arm aws s3 rm
 defn armr aws s3 rm --recursive
 
@@ -136,11 +180,27 @@ ec2_instances() {
     else
         args=()
     fi
-    aws ec2 describe-instances "${args[@]}" | jq '
-        .Reservations | map(
-            .Instances |
-            map({ InstanceId, PublicDnsName, InstanceType, KeyName, State: .State.Name })
-        )[]
+    aws ec2 describe-instances "${args[@]}" \
+    | jq '
+        [
+            .Reservations[] | .Instances |
+                map({
+                    Name: (.Tags[] | select(.Key == "Name") | .Value),
+                    InstanceId,
+                    PublicDnsName,
+                    InstanceType,
+                    KeyName,
+                    State: .State.Name
+                })
+            []
+        ] |
+        map(
+            [
+                to_entries[] |
+                select(.value != "")
+            ] |
+            from_entries
+        )
     '
 }
 export -f ec2_instances
