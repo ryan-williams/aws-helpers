@@ -72,6 +72,12 @@ instance_name() {
 export -f instance_name
 defn isn instance_name
 
+instance_ami() {
+    instance "$@" | jq -r .ImageId
+}
+export -f instance_ami
+defn isa instance_ami
+
 # Uses jq `singleton` helper from ../js
 instance_security_groups() {
     instance "$@" \
@@ -205,6 +211,11 @@ ec2_instances() {
 }
 export -f ec2_instances
 defn aei ec2_instances
+ec2_instances_running() {
+    ec2_instances "$@" | jq 'map(select(.State == "running"))'
+}
+export -f ec2_instances_running
+defn aeir ec2_instances_running
 defn ecl ec2_instances
 defn e2l ec2_instances
 
@@ -385,6 +396,11 @@ ami() {
     fi
 }
 export -f ami
+
+amin() {
+    ami "$@" | jq -r .Name
+}
+export -f amin
 
 amibdm() {
     if [ $# -eq 1 ]; then
