@@ -200,13 +200,7 @@ ec2_instances() {
                 })
             []
         ] |
-        map(
-            [
-                to_entries[] |
-                select(.value != "")
-            ] |
-            from_entries
-        )
+        map(with_entries(select(.value != "")))
     '
 }
 export -f ec2_instances
