@@ -11,6 +11,7 @@ alias dvcggctl="dvc config --global cache.type reflink,symlink,hardlink,copy"
 
 # Checkout
 alias dvco="dvc checkout"
+alias dvcof="dvc checkout -f"
 alias dvcorl="dvc checkout --relink"
 
 # GC
@@ -92,3 +93,9 @@ dvc_diff_file() {
 }
 export -f dvc_diff_file
 defn dvdf dvc_diff_file
+
+dvc_help() {
+    dvc "$@" --help
+}
+export -f dvc_help
+defn dvh dvc_help
