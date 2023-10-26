@@ -55,13 +55,13 @@ alias dvsa="dvc data status --unchanged"
 alias dvsu="dvc data status --unchanged"
 
 dvc_list_unchanged() {
-    dvc data status --unchanged --json | jq -r ".unchanged[]"
+    dvc data status --unchanged --json | jq -r "(.unchanged // [])[]"
 }
 export -f dvc_list_unchanged
 defn dvlu dvc_list_unchanged
 
 dvc_list_deleted() {
-    dvc data status --json | jq -r ".uncommitted.deleted[]"
+    dvc data status --json | jq -r "(.uncommitted.deleted // [])[]"
 }
 export -f dvc_list_deleted
 defn dvld dvc_list_deleted
