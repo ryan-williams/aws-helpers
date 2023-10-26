@@ -54,17 +54,19 @@ defn dvsjq dvc_data_status_unchanged_jq
 alias dvsa="dvc data status --unchanged"
 alias dvsu="dvc data status --unchanged"
 
-dvc_list_unchanged() {
-    dvc data status --unchanged --json | jq -r "(.unchanged // [])[]"
+dvc_list_category() {
+    if [ $# -ne 1 ]; then
+        echo "Usage: $0 <category (i.e. unchanged, uncommitted.modified, uncommitted.deleted)>" >&2
+        return 1
+    fi
+    category="$1"
+    dvc data status --unchanged --json | jq -r "(.$category // [])[]"
 }
-export -f dvc_list_unchanged
-defn dvlu dvc_list_unchanged
-
-dvc_list_deleted() {
-    dvc data status --json | jq -r "(.uncommitted.deleted // [])[]"
-}
-export -f dvc_list_deleted
-defn dvld dvc_list_deleted
+export -f dvc_list_category
+defn dvlu dvc_list_category unchanged
+defn dvld dvc_list_category uncommitted.deleted
+defn dvlm dvc_list_category uncommitted.modified
+defn dvlt dvc_list_category not_in_cache
 
 dvc_diff_file() {
     if [ $# -ne 1 ]; then
