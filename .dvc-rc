@@ -114,3 +114,30 @@ dvc_diff_file() {
 }
 export -f dvc_diff_file
 defn dvdf dvc_diff_file
+
+dvc_remote_root() {
+    dvc remote list "$@" | awk '{ print $2 }'
+}
+export -f dvc_remote_root
+defn dvrr dvc_remote_root
+
+dvc_remote_url() {
+    if [ $# -eq 2 ]; then
+        remote="$1"; shift
+        path="$1"; shift
+    elif [ $# -eq 1 ]; then
+        remote=
+        path="$1"; shift
+    else
+        echo "Usage: $0 [remote] <path>" >&2
+        return 1
+    fi
+    remote_root="$(dvc_remote_root $remote)"
+    local_cache_path="$(dvc_local_cache_path "$path")"
+    dir="$(basename "$(dirname "$local_cache_path")")"
+    base="$(basename "$local_cache_path")"
+    echo "$remote_root/files/md5/$dir/$base"
+}
+export -f dvc_remote_url
+defn dvru dvc_remote_url
+defn dvrp dvc_remote_url
