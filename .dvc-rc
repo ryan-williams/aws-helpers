@@ -69,6 +69,36 @@ defn dvld dvc_list_category uncommitted.deleted
 defn dvlm dvc_list_category uncommitted.modified
 defn dvlt dvc_list_category not_in_cache
 
+dvc_help() {
+    dvc "$@" --help
+}
+export -f dvc_help
+defn dvh dvc_help
+
+dvc_local_cache_path() {
+    for arg in "$@"; do
+        d="$1"; shift
+        f="${d%.dvc}"
+        if [ "$d" == "$f" ]; then
+            d="${f}.dvc"
+        fi
+        num_outs="$(cat "$d" | yq '.outs | length')"
+        if [ "$num_outs" != "1" ]; then
+            echo "$d: found $num_outs outs, expected 1" >&2
+            return 2
+        fi
+        md5="$(cat "$d" | yq -r '.outs[0].md5')"
+        dir="${md5:0:2}"
+        base="${md5:2}"
+        cache="$(dvc cache dir)"
+        local_cache_path="$cache/files/md5/$dir/$base"
+        echo "$local_cache_path"
+    done
+}
+export -f dvc_local_cache_path
+defn dvlp dvc_local_cache_path
+defn dvlcp dvc_local_cache_path
+
 dvc_diff_file() {
     if [ $# -ne 1 ]; then
         echo "Usage: $0 <path to file or .dvc>" >&2
@@ -79,23 +109,8 @@ dvc_diff_file() {
     if [ "$d" == "$f" ]; then
         d="${f}.dvc"
     fi
-    num_outs="$(cat "$d" | yq '.outs | length')"
-    if [ "$num_outs" != "1" ]; then
-        echo "Found $num_outs in $d" >&2
-        return 2
-    fi
-    md5="$(cat "$d" | yq -r '.outs[0].md5')"
-    dir="${md5:0:2}"
-    base="${md5:2}"
-    cache="$(dvc cache dir)"
-    blob="$cache/files/md5/$dir/$base"
-    diff "$blob" "$f"
+    local_cache_path="$(dvc_local_cache_path "$f")"
+    diff "$local_cache_path" "$f"
 }
 export -f dvc_diff_file
 defn dvdf dvc_diff_file
-
-dvc_help() {
-    dvc "$@" --help
-}
-export -f dvc_help
-defn dvh dvc_help
