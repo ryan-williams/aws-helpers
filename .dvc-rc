@@ -1,10 +1,19 @@
 alias dv=dvc
 alias dva="dvc add"
+
+# Config
 alias dvcg="dvc config"
 alias dvcgct="dvc config cache.type"
 alias dvcgctl="dvc config cache.type reflink,symlink,hardlink,copy"
+alias dvcgg="dvc config --global"
+alias dvcggct="dvc config --global cache.type"
+alias dvcggctl="dvc config --global cache.type reflink,symlink,hardlink,copy"
+
+# Checkout
 alias dvco="dvc checkout"
 alias dvcorl="dvc checkout --relink"
+
+# GC
 alias dvgc="dvc gc"
 alias dvgcw="dvc gc -w"
 alias dvgcwf="dvc gc -w -f"
@@ -12,8 +21,11 @@ alias dvgcwn="dvc gc -w --dry -f"
 alias dvgcwr="dvc gc -w --not-in-remote"
 alias dvgcwrf="dvc gc -w --not-in-remote -f"
 alias dvgcwrn="dvc gc -w --not-in-remote --dry -f"
+
+# ls
 alias dvl="dvc ls"
 alias dvlr="dvc ls -R"
+
 alias dvm="dvc commit"
 alias dvmv="dvc mv"
 alias dvpl="dvc pull"
@@ -21,6 +33,8 @@ alias dvps="dvc push"
 alias dvpt="dvc status"
 alias dvr="dvc remote"
 alias dvrl="dvc remote list"
+
+# Status
 alias dvs="dvc data status"
 alias dvsg="dvc data status --granular"
 
