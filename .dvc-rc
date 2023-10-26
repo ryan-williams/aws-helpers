@@ -23,10 +23,19 @@ alias dvr="dvc remote"
 alias dvrl="dvc remote list"
 alias dvs="dvc data status"
 alias dvsg="dvc data status --granular"
+
+alias dvscj="dvc data status --json"
 dvc_data_status_jq() {
     dvc data status --json | jq "$@"
 }
 export -f dvc_data_status_jq
-defn dvsjq dvc_data_status_jq
-alias dvsj="dvc data status --json"
+defn dvscjq dvc_data_status_jq
+
+alias dvsj="dvc data status --unchanged --json"
+dvc_data_status_unchanged_jq() {
+    dvc data status --unchanged --json | jq "$@"
+}
+export -f dvc_data_status_unchanged_jq
+defn dvsjq dvc_data_status_unchanged_jq
+alias dvsa="dvc data status --unchanged"
 alias dvsu="dvc data status --unchanged"
