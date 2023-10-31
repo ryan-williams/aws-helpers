@@ -106,11 +106,11 @@ dvc_size() {
     if [ $# -eq 0 ]; then
         yq '.outs | map(.size)[] | add'
     elif [ $# -eq 1 ] ; then
-        yq '.outs | map(.size)[] | add' "$1"
+        yq '.outs | map(.size) | add' "$1"
     else
         for path in "$@"; do
-            cat "$path" | yq '.outs | map(.size)[] | add'
-        done | sum
+            dvc_size "$path"
+        done | jq -n '[ inputs ] | add'
     fi
 }
 export -f dvc_size
