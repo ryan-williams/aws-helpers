@@ -116,6 +116,12 @@ dvc_size() {
 export -f dvc_size
 defn dvz dvc_size
 
+dvc_size_human() {
+    dvc_size "$@" | numfmt --to=iec
+}
+export -f dvc_size_human
+defn dvzh dvc_size_human
+
 dvc_diff_file() {
     if [ $# -ne 1 ]; then
         echo "Usage: $0 <path to file or .dvc>" >&2
