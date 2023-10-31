@@ -14,6 +14,9 @@ alias dvco="dvc checkout"
 alias dvcof="dvc checkout -f"
 alias dvcorl="dvc checkout --relink"
 
+# Fetch
+alias dvf="dvc fetch"
+
 # GC
 alias dvgc="dvc gc"
 alias dvgcw="dvc gc -w"
@@ -98,6 +101,20 @@ dvc_local_cache_path() {
 export -f dvc_local_cache_path
 defn dvlp dvc_local_cache_path
 defn dvlcp dvc_local_cache_path
+
+dvc_size() {
+    if [ $# -eq 0 ]; then
+        yq '.outs | map(.size)[] | add'
+    elif [ $# -eq 1 ] ; then
+        yq '.outs | map(.size)[] | add' "$1"
+    else
+        for path in "$@"; do
+            cat "$path" | yq '.outs | map(.size)[] | add'
+        done | sum
+    fi
+}
+export -f dvc_size
+defn dvz dvc_size
 
 dvc_diff_file() {
     if [ $# -ne 1 ]; then
