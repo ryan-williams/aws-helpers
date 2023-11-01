@@ -122,6 +122,18 @@ dvc_size_human() {
 export -f dvc_size_human
 defn dvzh dvc_size_human
 
+dvc_find() {
+    git ls-files | grep '.dvc$'
+}
+export -f dvc_find
+defn dvfn dvc_find
+
+dvc_find_suffix() {
+    git ls-files | grep "${1}.dvc\$"
+}
+export -f dvc_find_suffix
+defn dvfns dvc_find_suffix
+
 dvc_diff_file() {
     if [ $# -ne 1 ]; then
         echo "Usage: $0 <path to file or .dvc>" >&2
