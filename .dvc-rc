@@ -31,9 +31,20 @@ alias dvgcwrn="dvc gc -w --not-in-remote --dry -f"
 
 # Diff
 dvc_diff() {
-    before="$1"; shift
-    after="$1"; shift
+    if [ $# -ne 2 ]; then
+        echo "Usage: $0 <start..end> <path>" >&2
+        return 1
+    fi
+    ref="$1"; shift
     path="$1"; shift
+
+    before="${ref%..*}"
+    if [ "$before" == "$ref" ]; then
+        after=HEAD
+    else
+        after="${ref#*..}"
+    fi
+
     before_md5="$(git show $before:$path | yq -r '.outs[0].md5')"
     before_path="$(dvc_mdf_cache_path "$before_md5")"
     after_md5="$(git show $after:$path | yq -r '.outs[0].md5')"
