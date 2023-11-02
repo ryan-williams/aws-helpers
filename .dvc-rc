@@ -29,6 +29,20 @@ alias dvgcwr="dvc gc -w --not-in-remote"
 alias dvgcwrf="dvc gc -w --not-in-remote -f"
 alias dvgcwrn="dvc gc -w --not-in-remote --dry -f"
 
+# Diff
+dvc_diff() {
+    before="$1"; shift
+    after="$1"; shift
+    path="$1"; shift
+    before_md5="$(git show $before:$path | yq -r '.outs[0].md5')"
+    before_path="$(dvc_mdf_cache_path "$before_md5")"
+    after_md5="$(git show $after:$path | yq -r '.outs[0].md5')"
+    after_path="$(dvc_mdf_cache_path "$after_md5")"
+    diff "$before_path" "$after_path"
+}
+export -f dvc_diff
+defn dvd dvc_diff
+
 # ls
 alias dvl="dvc ls"
 alias dvlr="dvc ls -R"
@@ -81,25 +95,39 @@ dvc_help() {
 export -f dvc_help
 defn dvh dvc_help
 
-dvc_local_cache_path() {
-    for arg in "$@"; do
-        d="$1"; shift
-        f="${d%.dvc}"
-        if [ "$d" == "$f" ]; then
-            d="${f}.dvc"
-        fi
-        num_outs="$(cat "$d" | yq '.outs | length')"
-        if [ "$num_outs" != "1" ]; then
-            echo "$d: found $num_outs outs, expected 1" >&2
-            return 2
-        fi
-        md5="$(cat "$d" | yq -r '.outs[0].md5')"
-        dir="${md5:0:2}"
-        base="${md5:2}"
-        cache="$(dvc cache dir)"
-        local_cache_path="$cache/files/md5/$dir/$base"
+dvc_mdf_cache_path() {
+    cache="$(dvc cache dir)"
+    md5_dir="$cache/files/md5"
+    for md5 in "$@"; do
+        prefix="${md5:0:2}"
+        suffix="${md5:2}"
+        local_cache_path="$md5_dir/$prefix/$suffix"
         echo "$local_cache_path"
     done
+}
+export -f dvc_mdf_cache_path
+defn dvmcp dvc_mdf_cache_path
+
+dvc_local_cache_path() {
+    if [ $# -eq 0 ]; then
+        md5="$(cat | yq -r '.outs[0].md5')"
+        dvc_mdf_cache_path "$md5"
+    else
+        for arg in "$@"; do
+            d="$1"; shift
+            f="${d%.dvc}"
+            if [ "$d" == "$f" ]; then
+                d="${f}.dvc"
+            fi
+            num_outs="$(cat "$d" | yq '.outs | length')"
+            if [ "$num_outs" != "1" ]; then
+                echo "$d: found $num_outs outs, expected 1" >&2
+                return 2
+            fi
+            md5="$(cat "$d" | yq -r '.outs[0].md5')"
+            dvc_mdf_cache_path "$md5"
+        done
+    fi
 }
 export -f dvc_local_cache_path
 defn dvlp dvc_local_cache_path
