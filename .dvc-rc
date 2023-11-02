@@ -29,6 +29,19 @@ alias dvgcwr="dvc gc -w --not-in-remote"
 alias dvgcwrf="dvc gc -w --not-in-remote -f"
 alias dvgcwrn="dvc gc -w --not-in-remote --dry -f"
 
+dvc_to_md5() {
+    if [ $# -eq 0 ]; then
+        cat | yq -r '.outs[0].md5'
+    else
+        for path in "$@"; do
+            cat "$path" | yq -r '.outs[0].md5'
+        done
+    fi
+}
+export -f dvc_to_md5
+defn dv2m dvc_to_md5
+defn dv5 dvc_to_md5
+
 # Diff
 dvc_diff() {
     if [ $# -ne 2 ]; then
@@ -39,17 +52,22 @@ dvc_diff() {
     path="$1"; shift
 
     before="${ref%..*}"
+    before_md5="$(git show $before:$path | dvc_to_md5)"
+    before_path="$(dvc_mdf_cache_path "$before_md5")"
+
     if [ "$before" == "$ref" ]; then
-        after=HEAD
+        after=
+        after_md5="$(dvc_to_md5 "$path")"
+        after_path="${path%.dvc}"
     else
         after="${ref#*..}"
+        after_md5="$(git show $after:$path | dvc_to_md5)"
+        after_path="$(dvc_mdf_cache_path "$after_md5")"
     fi
 
-    before_md5="$(git show $before:$path | yq -r '.outs[0].md5')"
-    before_path="$(dvc_mdf_cache_path "$before_md5")"
-    after_md5="$(git show $after:$path | yq -r '.outs[0].md5')"
-    after_path="$(dvc_mdf_cache_path "$after_md5")"
-    diff "$before_path" "$after_path"
+    cmd=(diff "$before_path" "$after_path")
+    echo "${cmd[*]}" >&2
+    "${cmd[@]}"
 }
 export -f dvc_diff
 defn dvd dvc_diff
@@ -121,7 +139,7 @@ defn dvmcp dvc_mdf_cache_path
 
 dvc_local_cache_path() {
     if [ $# -eq 0 ]; then
-        md5="$(cat | yq -r '.outs[0].md5')"
+        md5="$(dvc_to_md5)"
         dvc_mdf_cache_path "$md5"
     else
         for arg in "$@"; do
@@ -130,12 +148,12 @@ dvc_local_cache_path() {
             if [ "$d" == "$f" ]; then
                 d="${f}.dvc"
             fi
-            num_outs="$(cat "$d" | yq '.outs | length')"
+            num_outs="$(dvc_to_md5 "$d")"
             if [ "$num_outs" != "1" ]; then
                 echo "$d: found $num_outs outs, expected 1" >&2
                 return 2
             fi
-            md5="$(cat "$d" | yq -r '.outs[0].md5')"
+            md5="$(dvc_to_md5 "$d")"
             dvc_mdf_cache_path "$md5"
         done
     fi
