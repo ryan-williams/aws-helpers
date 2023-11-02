@@ -17,6 +17,9 @@ alias dvcorl="dvc checkout --relink"
 # Fetch
 alias dvf="dvc fetch"
 
+# Unprotect
+alias dvup="dvc unprotect"
+
 # GC
 alias dvgc="dvc gc"
 alias dvgcw="dvc gc -w"
