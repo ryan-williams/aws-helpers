@@ -20,6 +20,19 @@ alias dvf="dvc fetch"
 # Unprotect
 alias dvup="dvc unprotect"
 
+dvc_mv_to_git() {
+    for path in "$@"; do
+        path="${path%.dvc}"
+        dvc_path="${path}.dvc"
+        dvc checkout "$path"
+        dvc unprotect "$path"
+        git rm "$dvc_path"
+        git add -f "$path"
+    done
+}
+export -f dvc_mv_to_git
+defn dv2g dvc_mv_to_git
+
 # GC
 alias dvgc="dvc gc"
 alias dvgcw="dvc gc -w"
@@ -59,6 +72,7 @@ dvc_diff() {
     fi
     ref="$1"; shift
     path="$1"; shift
+    path="${path%.dvc}.dvc"
 
     before="${ref%..*}"
     before_md5="$(git show $before:$path | dvc_to_md5)"
