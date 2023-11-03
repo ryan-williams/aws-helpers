@@ -44,8 +44,17 @@ defn dv5 dvc_to_md5
 
 # Diff
 dvc_diff() {
+    flags=()
+    for arg in "$@"; do
+        if [ "${arg:0:1}" == "-" ]; then
+            flags+=("$arg")
+            shift
+        else
+            break
+        fi
+    done
     if [ $# -ne 2 ]; then
-        echo "Usage: $0 <start..end> <path>" >&2
+        echo "Usage: dvc_diff [diff flags] <start..end> <path>" >&2
         return 1
     fi
     ref="$1"; shift
@@ -65,12 +74,17 @@ dvc_diff() {
         after_path="$(dvc_mdf_cache_path "$after_md5")"
     fi
 
-    cmd=(diff "$before_path" "$after_path")
+    cmd=(diff "${flags[@]}" "$before_path" "$after_path")
     echo "${cmd[*]}" >&2
     "${cmd[@]}"
 }
 export -f dvc_diff
 defn dvd dvc_diff
+defn dvdh dvc_diff HEAD
+defn dvdph dvc_diff 'HEAD^..HEAD'
+defn dvdw dvc_diff -w
+defn dvdwh dvc_diff -w HEAD
+defn dvdwph dvc_diff -w 'HEAD^..HEAD'
 
 # ls
 alias dvl="dvc ls"
