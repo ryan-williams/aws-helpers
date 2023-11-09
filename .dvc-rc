@@ -47,6 +47,11 @@ dvc_to_md5() {
         cat | yq -r '.outs[0].md5'
     else
         for path in "$@"; do
+            num_outs="$(cat "$path" | yq -r '.outs | length')"
+            if [ "$num_outs" != "1" ]; then
+                echo "$path: found $num_outs outs, expected 1" >&2
+                return 1
+            fi
             cat "$path" | yq -r '.outs[0].md5'
         done
     fi
@@ -138,9 +143,10 @@ dvc_list_category() {
         return 1
     fi
     category="$1"
-    dvc data status --unchanged --json | jq -r "(.$category // [])[]"
+    dvc data status --unchanged --json | jq -r "(.$category // [])[]" | sort
 }
 export -f dvc_list_category
+defn dvla dvc_list_category committed.added
 defn dvlu dvc_list_category unchanged
 defn dvld dvc_list_category uncommitted.deleted
 defn dvlm dvc_list_category uncommitted.modified
@@ -173,14 +179,7 @@ dvc_local_cache_path() {
         for arg in "$@"; do
             d="$1"; shift
             f="${d%.dvc}"
-            if [ "$d" == "$f" ]; then
-                d="${f}.dvc"
-            fi
-            num_outs="$(dvc_to_md5 "$d")"
-            if [ "$num_outs" != "1" ]; then
-                echo "$d: found $num_outs outs, expected 1" >&2
-                return 2
-            fi
+            d="${f}.dvc"
             md5="$(dvc_to_md5 "$d")"
             dvc_mdf_cache_path "$md5"
         done
