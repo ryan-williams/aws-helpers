@@ -313,6 +313,20 @@ aws_make_bucket() {
 export -f aws_make_bucket
 defn amb aws_make_bucket
 
+aws_make_objects_public() {
+    for arg in "$@"; do
+        suffix="${arg#s3://}"
+        bkt="${suffix%%/*}"
+        key="${suffix#*/}"
+        cmd=(aws s3api put-object-acl --bucket "$bkt" --key "$key" --acl public-read)
+        echo "${cmd[*]}" >&2
+        "${cmd[@]}"
+    done
+}
+export -f aws_make_objects_public
+defn amop aws_make_objects_public
+defn apo aws_make_objects_public
+
 aws_make_bucket_public() {
     if [ $# -ne 1 ]; then
         echo "Usage: $0 <bkt>" >&2
