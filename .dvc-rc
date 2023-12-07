@@ -158,6 +158,7 @@ dvc_help() {
 export -f dvc_help
 defn dvh dvc_help
 
+defn dvcd dvc cache dir
 dvc_mdf_cache_path() {
     cache="$(dvc cache dir)"
     md5_dir="$cache/files/md5"
@@ -170,6 +171,8 @@ dvc_mdf_cache_path() {
 }
 export -f dvc_mdf_cache_path
 defn dvmcp dvc_mdf_cache_path
+
+defn dvud dvc-utils diff
 
 dvc_local_cache_path() {
     if [ $# -eq 0 ]; then
