@@ -55,6 +55,24 @@ export -f aws_s3_ls_recursive
 defn alr aws_s3_ls_recursive
 defn alrh aws s3 ls --recursive --human-readable
 
+s3_content_type() {
+    if [ $# -ne 2 ]; then
+        echo "Usage: $0 [s3://]<bkt>/<key> <content-type>" >&2
+        return 1
+    fi
+    url="$1"; shift
+    content_type="$1"; shift
+    url="${url#s3://}"
+    bkt="${url%%/*}"
+    key="${url#*/}"
+    echo "bkt: $bkt, key: $key" >&2
+    aws s3api copy-object --bucket "$bkt" --content-type "$content_type" \
+        --copy-source "$bkt/$key" --key "$key" \
+        --metadata-directive "REPLACE"
+}
+export -f s3_content_type
+defn s3ct s3_content_type
+
 instance() {
     if [ $# -ne 1 ]; then
         echo "Usage: $0 <instance id>" >&2
