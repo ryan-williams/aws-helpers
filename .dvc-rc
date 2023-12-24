@@ -115,7 +115,39 @@ alias dvpl="dvc pull"
 alias dvps="dvc push"
 alias dvpt="dvc status"
 alias dvr="dvc remote"
+alias dvra="dvc remote add"
+alias dvrd="dvc remote default"
 alias dvrl="dvc remote list"
+alias dvrm="dvc remote modify"
+
+dvc_remote_get_url() {
+    dvc remote list | grep "^$1" | awk '{print $2}' | perl -pe 's/s3:\//s3/'
+}
+export -f dvc_remote_get_url
+defn dvrgu dvc_remote_get_url
+
+dvc_remote_set_url() {
+    if [ $# -ne 2 ]; then
+        echo "Usage: $0 <remote> <url>" >&2
+        return 1
+    fi
+    dvc remote modify "$1" url "$2"
+}
+export -f dvc_remote_set_url
+defn dvrsu dvc_remote_set_url
+
+dvc_remote_url() {
+    if [ $# -eq 1 ]; then
+        dvc_remote_get_url "$@"
+    elif [ $# -eq 2 ]; then
+        dvc_remote_set_url "$@"
+    else
+        echo "Usage: $0 <remote> [url]" >&2
+        return 1
+    fi
+}
+export -f dvc_remote_url
+defn dvru dvc_remote_url
 
 # Status
 alias dvs="dvc data status"
@@ -246,7 +278,7 @@ dvc_remote_root() {
 export -f dvc_remote_root
 defn dvrr dvc_remote_root
 
-dvc_remote_url() {
+dvc_remote_blob_url() {
     if [ $# -eq 2 ]; then
         remote="$1"; shift
         path="$1"; shift
@@ -263,6 +295,6 @@ dvc_remote_url() {
     base="$(basename "$local_cache_path")"
     echo "$remote_root/files/md5/$dir/$base"
 }
-export -f dvc_remote_url
-defn dvru dvc_remote_url
-defn dvrp dvc_remote_url
+export -f dvc_remote_blob_url
+defn dvrbu dvc_remote_blob_url
+defn dvrp dvc_remote_blob_url
