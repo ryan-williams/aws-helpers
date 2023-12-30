@@ -7,6 +7,12 @@ aws_profile() {
 }
 export -f aws_profile
 defn awp aws_profile
+aws_unset_profile() {
+  unset AWS_PROFILE
+}
+export -f aws_unset_profile
+defn awup aws_unset_profile
+defn awus aws_unset_profile
 
 defn ec2 aws ec2
 defn ecr aws ecr
