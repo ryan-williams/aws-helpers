@@ -390,11 +390,18 @@ aws_make_bucket_public() {
         return 1
     fi
     b="$1"; shift
+
+    public_access_cmd=(aws s3api put-public-access-block --bucket $b --public-access-block-configuration "BlockPublicAcls=false,IgnorePublicAcls=false,BlockPublicPolicy=false,RestrictPublicBuckets=false")
+    echo "Running: ${public_access_cmd[*]}" >&2
+    "${public_access_cmd[@]}"
+
     policy_cmd=(aws s3api put-bucket-policy --bucket $b --policy "{\"Id\":\"s3://$b-public\",\"Statement\":[{\"Sid\":\"s3://$b-public\",\"Action\":[\"s3:GetObject\"],\"Effect\":\"Allow\",\"Resource\":\"arn:aws:s3:::$b/*\",\"Principal\":{\"AWS\":[\"*\"]}}]}")
-    echo "Running: ${policy_cmd[*]}"
+    echo "Running: ${policy_cmd[*]}" >&2
     "${policy_cmd[@]}"
-    # aws s3api put-bucket-website --bucket $bkt --website-configuration file://website.json
-    # aws s3api put-bucket-acl --bucket $b --acl public-read
+
+    # See also:
+    # - aws s3api put-bucket-website --bucket $bkt --website-configuration file://website.json
+    # - aws s3api put-bucket-acl --bucket $b --acl public-read
 }
 export -f aws_make_bucket_public
 defn ambp aws_make_bucket_public
