@@ -132,9 +132,34 @@ defn isgn instance_security_group_name
 defn arm aws s3 rm
 defn armr aws s3 rm --recursive
 
-defn acp aws s3 cp
+aws_s3_cp() {
+    if [ $# -eq 2 ]; then
+        aws s3 cp "$@"
+    elif [ $# -eq 1 ]; then
+        src="$1"; shift
+        dst="./$(basename "$src")"; shift
+        cmd=(aws s3 cp "$src" "$dst")
+        echo "${cmd[*]}" >&2
+        "${cmd[@]}"
+    elif [ $# -eq 0 ]; then
+        echo "Usage: $0 <src> [...<src>] [dst=./]" >&2
+        return 1
+    else
+        dst="${@:(-1)}"
+        srcs=("${@:1:$(($#-1))}")
+        for src in "${srcs[@]}"; do
+            cmd=(aws s3 cp "$src" "$dst")
+            echo "${cmd[*]}" >&2
+            "${cmd[@]}"
+        done
+    fi
+}
+export -f aws_s3_cp
+defn acp aws_s3_cp
+defn s3c aws_s3_cp
+defn s3cp aws_s3_cp
+
 defn asc aws-s3-cat
-defn s3c aws s3 cp
 defn asy aws s3 sync
 defn asz aws s3 sync --size-only
 defn asn aws s3 sync --dryrun
@@ -383,6 +408,25 @@ aws_get_object_acl() {
 }
 export -f aws_get_object_acl
 defn agoa aws_get_object_acl
+
+aws_get_bucket_policy() {
+    aws s3api get-bucket-policy --bucket "$1" | jq -r .Policy | jq
+}
+export -f aws_get_bucket_policy
+defn agbp aws_get_bucket_policy
+
+defn agbc aws s3api get-bucket-cors --bucket
+aws_put_bucket_cors() {
+    bkt="$1"; shift
+    if [ $# -eq 0 ]; then
+        cors_config='{"CORSRules":[{"AllowedHeaders":["Authorization"],"AllowedMethods":["GET","HEAD"],"AllowedOrigins":["*"],"ExposeHeaders":["Access-Control-Allow-Origin"]}]}'
+    else
+        cors_config="$1"; shift
+    fi
+    aws s3api put-bucket-cors --bucket "$bkt" --cors-configuration "$cors_config" "$@"
+}
+export -f aws_put_bucket_cors
+defn apbc aws_put_bucket_cors
 
 aws_make_bucket_public() {
     if [ $# -ne 1 ]; then
