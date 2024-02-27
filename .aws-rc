@@ -419,7 +419,7 @@ defn agbc aws s3api get-bucket-cors --bucket
 aws_put_bucket_cors() {
     bkt="$1"; shift
     if [ $# -eq 0 ]; then
-        cors_config='{"CORSRules":[{"AllowedHeaders":["Authorization"],"AllowedMethods":["GET","HEAD"],"AllowedOrigins":["*"],"ExposeHeaders":["Access-Control-Allow-Origin"]}]}'
+        cors_config='{"CORSRules":[{"AllowedHeaders":["Authorization"],"AllowedMethods":["GET","HEAD"],"AllowedOrigins":["*"],"ExposeHeaders":["Access-Control-Allow-Origin", "Accept-Ranges", "Content-Range", "Content-Encoding"]}]}'
     else
         cors_config="$1"; shift
     fi
