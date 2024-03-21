@@ -174,6 +174,9 @@ alias asin="aws s3 sync --dryrun --exclude '*' --include"
 alias asni="aws s3 sync --dryrun --exclude '*' --include"
 alias asnzi="aws s3 sync --dryrun --size-only --exclude '*' --include"
 alias aszi="aws s3 sync --size-only --exclude '*' --include"
+# "When syncing from S3 to local… the default behavior is to ignore same-sized items unless the local version is newer than the S3 version." -`aws s3 sync help`
+alias ast="aws s3 sync --exact-timestamps --exclude '*' --include"
+alias astn="aws s3 sync --exact-timestamps --dryrun --exclude '*' --include"
 
 aws_ecr_list() {
   aws ecr describe-images --repository-name "$@"
