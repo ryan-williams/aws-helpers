@@ -301,6 +301,7 @@ watch_ec2_state() {
     watch ec2_state "$@"
 }
 export -f watch_ec2_state
+defn aewi watch_ec2_state
 
 wait_ec2_state() {
     watch ec2_state "$@"
