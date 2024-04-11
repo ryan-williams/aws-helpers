@@ -613,3 +613,44 @@ ecs_describe_container_instances() {
 }
 export -f ecs_describe_container_instances
 defn ecsdci ecs_describe_container_instances
+
+instances_by_mem() {
+    if [ $# -eq 0 ] || [ $# -gt 2 ]; then
+        echo "Usage: instances_by_mem <GiB> [cache-file]" >&2
+    fi
+    gib="$1"; shift
+    mib="$(echo "$gib * 1024" | bc)"
+    if [ $# -gt 0 ]; then
+        out="$1"; shift
+    else
+        out=/dev/stdout
+    fi
+    aws ec2 describe-instance-types --query "InstanceTypes[?MemoryInfo.SizeInMiB==\`$mib\`]" --output json | jq . > "$out"
+}
+export -f instances_by_mem
+defn aibm instances_by_mem
+
+summarize_instances() {
+    if [ $# -eq 0 ] || [ $# -gt 2 ]; then
+        echo "Usage: summarize_instances <cpus> [arch]" >&2
+        return 1
+    fi
+    local cpus="$1"; shift
+    local arch=
+    if [ $# -gt 0 ]; then
+        arch="$1"; shift
+    fi
+
+    select=".cpus == $cpus"
+    if [ -n "$arch" ]; then
+        select+=" and .archs == [\"$arch\"]"
+    fi
+
+    cat | jq -c "map({
+        name: .InstanceType,
+        cpus: .VCpuInfo.DefaultVCpus,
+        archs: .ProcessorInfo.SupportedArchitectures
+    })[] | select($select)" | sort
+}
+export -f summarize_instances
+defn aisi summarize_instances
