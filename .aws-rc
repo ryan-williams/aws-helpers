@@ -654,3 +654,16 @@ summarize_instances() {
 }
 export -f summarize_instances
 defn aisi summarize_instances
+
+mnt_nvme() {
+    if [ $# -ne 2 ]; then
+        echo "Usage: $0 <device> <mountpoint>" >&2
+        return 1
+    fi
+    device="$1"; shift
+    mnt="$1"; shift
+    sudo mkfs.ext4 "$device"
+    sudo mkdir -p "$mnt"
+    sudo mount "$device" "$mnt"
+    sudo chown -R $USER:$USER "$mnt"
+}
