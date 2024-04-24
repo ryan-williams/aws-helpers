@@ -85,16 +85,34 @@ instance() {
         return 1
     fi
     aws ec2 describe-instances --instance-ids "$1" \
-        | jq .Reservations | singleton \
-        | jq .Instances | singleton
+        | o1 .Reservations \
+        | j1 .Instances \
+        | j1
 }
 export -f instance
+defn e2i instance
 
 instance_name() {
     instance "$@" | jq -r '.Tags[] | select(.Key == "Name") | .Value'
 }
 export -f instance_name
 defn isn instance_name
+
+instance_ebs_volume_ids() {
+    instance "$@" | jq -r '.BlockDeviceMappings[].Ebs | select(.) | .VolumeId'
+}
+defn e2iv instance_ebs_volume_ids
+
+ebs_volumes() {
+    local volumes="$(aws ec2 describe-volumes --volume-ids "$@" | o1 .Volumes)"
+    if [ $# -eq 1 ]; then
+        echo "$volumes" | j1
+    else
+        echo "$volumes"
+    fi
+}
+defn e2vs ebs_volumes
+defn vols ebs_volumes
 
 instance_ami() {
     instance "$@" | jq -r .ImageId
@@ -667,3 +685,50 @@ mnt_nvme() {
     sudo mount "$device" "$mnt"
     sudo chown -R $USER:$USER "$mnt"
 }
+
+defn e2li launch-instance.py
+defn eli launch-instance.py
+
+vpcs() {
+    aws ec2 describe-vpcs | jq '.Vpcs[]'
+}
+vpc_ids() {
+    vpcs | jq -r '.VpcId'
+}
+defn vpci vpc_ids
+vpcs0() {
+    vpcs | jq -c '{VpcId, CidrBlock, IsDefault}'
+}
+defn vp0 vpcs0
+default_vpc() {
+    vpcs | jq 'select(.IsDefault)'
+}
+defn dvpc default_vpc
+default_vpc_id() {
+    default_vpc | jq -r '.VpcId'
+}
+defn dvpci default_vpc_id
+
+ec2_instance_set_security_group() {
+    if [ $# -ne 2 ]; then
+        echo "Usage: $0 <instance id> <security group id>" >&2
+        return 1
+    fi
+    instance_id="$1"; shift
+    security_group_id="$1"; shift
+    aws ec2 modify-instance-attribute --instance-id "$instance_id" --groups "$security_group_id"
+}
+defn e2isg ec2_instance_set_security_group
+defn isg ec2_instance_set_security_group
+
+defn e2ti aws ec2 terminate-instances --instance-ids
+defn e2asgi add_security_group_ingress.py
+defn asgi add_security_group_ingress.py
+
+append_to_path ec2
+
+ec2_key_pairs() {
+    aws ec2 describe-key-pairs | jq -r '.KeyPairs[].KeyName'
+}
+export -f ec2_key_pairs
+defn e2kp ec2_key_pairs
