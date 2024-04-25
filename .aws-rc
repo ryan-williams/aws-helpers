@@ -17,7 +17,6 @@ defn awus aws_unset_profile
 defn ec2 aws ec2
 defn ecr aws ecr
 defn aed aws ec2 describe-instances
-defn aedi aws ec2 describe-instances --instance-ids
 defn aesi aws ec2 start-instances --instance-ids
 defn aepi aws ec2 stop-instances --instance-ids
 defn aeti aws ec2 terminate-instances --instance-ids
@@ -249,34 +248,49 @@ check_buckets() {
   | parallel 'aws s3 ls {} &>/dev/null && echo "Success: {}" || echo "Failure: {}"'
 }
 
-ec2_instances() {
+ec2_describe_instances() {
     if [ $# -gt 0 ]; then
         args=(--instance-ids)
         args+=("$@")
     else
         args=()
     fi
-    aws ec2 describe-instances "${args[@]}" \
+    if which parallel &>/dev/null; then
+        parallel -k 'aws ec2 describe-instances "${args[@]}" --instance-ids' ::: "$@"
+    else
+        if [ $# -gt 1 ]; then
+            echo 'Invoking `aws ec2 describe-instances` for each of '$#' instances, to ensure consistent ordering.' >&2
+            echo 'Recommend installing GNU Parallel for faster execution.' >&2
+        fi
+        for id in "$@"; do
+            aws ec2 describe-instances "${args[@]}" "$id"
+        done
+    fi
+}
+defn aedi ec2_describe_instances
+
+ec2_instances() {
+    ec2_describe_instances "$@" \
+    | o1 Reservations \
+    | jq_filter \
+    | j1 .Instances \
+    | j1 \
     | jq '
-        [
-            .Reservations[] | .Instances |
-                map({
-                    Name: (.Tags[] | select(.Key == "Name") | .Value),
-                    InstanceId,
-                    PublicDnsName,
-                    InstanceType,
-                    KeyName,
-                    State: .State.Name
-                })
-            []
-        ] |
-        map(with_entries(select(.value != "")))
+        {
+            Name: (.Tags[] | select(.Key == "Name") | .Value),
+            InstanceId,
+            PublicDnsName,
+            InstanceType,
+            KeyName,
+            State: .State.Name
+        }
+        | with_entries(select(.value != ""))
     '
 }
 export -f ec2_instances
 defn aei ec2_instances
 ec2_instances_running() {
-    ec2_instances "$@" | jq 'map(select(.State == "running"))'
+    ec2_instances "$@" | jq 'select(.State == "running")'
 }
 export -f ec2_instances_running
 defn aeir ec2_instances_running
@@ -284,7 +298,7 @@ defn ecl ec2_instances
 defn e2l ec2_instances
 
 ec2_dnsname() {
-    ec2_instances "$@" | jq -rs '.[-1][0].PublicDnsName'
+    ec2_instances "$@" | jq -r .PublicDnsName
 }
 export -f ec2_dnsname
 defn edn ec2_dnsname
@@ -686,8 +700,8 @@ mnt_nvme() {
     sudo chown -R $USER:$USER "$mnt"
 }
 
-defn e2li launch-instance.py
-defn eli launch-instance.py
+defn e2li launch_instance.py
+defn eli launch_instance.py
 
 vpcs() {
     aws ec2 describe-vpcs | jq '.Vpcs[]'

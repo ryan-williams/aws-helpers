@@ -1,7 +1,30 @@
 #!/usr/bin/env python
+from sys import stderr
 
 import boto3
 from click import argument, command, echo, option
+
+
+def err(*args):
+    print(*args, file=stderr)
+
+
+def default_vpc_id(ec2):
+    """
+    Get the default VPC ID for the current account.
+
+    Parameters:
+        ec2 (boto3.client): An EC2 client object.
+
+    Returns:
+        str: The default VPC ID.
+    """
+    response = ec2.describe_vpcs(Filters=[{'Name': 'isDefault', 'Values': ['true']}])
+    vpcs = response['Vpcs']
+    default_vpcs = [vpc for vpc in vpcs if vpc['IsDefault']]
+    if len(default_vpcs) != 1:
+        raise ValueError(f"Expected 1 default VPC, found {len(default_vpcs)}: {default_vpcs}")
+    return default_vpcs[0]['VpcId']
 
 
 def create_security_group(ec2, vpc_id, name, description=None, https_ingress=False):
@@ -15,10 +38,14 @@ def create_security_group(ec2, vpc_id, name, description=None, https_ingress=Fal
         description (str): Description of the security group.
         https_ingress (bool): Whether to allow HTTP ingress traffic.
     """
+    if not vpc_id:
+        vpc_id = default_vpc_id(ec2)
+        err(f"Fetched default VPC ID: {vpc_id}")
+
     response = ec2.create_security_group(
         GroupName=name,
         Description=description,
-        VpcId=vpc_id
+        VpcId=vpc_id,
     )
     security_group_id = response['GroupId']
     print(f"Security Group Created: {security_group_id}")
