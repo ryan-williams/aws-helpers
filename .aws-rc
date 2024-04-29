@@ -267,6 +267,7 @@ ec2_describe_instances() {
         done
     fi
 }
+export -f ec2_describe_instances
 defn aedi ec2_describe_instances
 
 ec2_instances() {
