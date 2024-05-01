@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from os import O_WRONLY, O_CREAT, chmod
+from os import chmod, environ
 from os.path import exists, expanduser, join
 from subprocess import check_call
 from sys import stderr
@@ -156,6 +156,11 @@ def main(
     if not instance_type:
         instance_type = instance()['InstanceType']
         err(f"Using instance type from instance {instance_id}: {instance_type}")
+
+    if not name:
+        user = environ['USER']
+        name = f"{user}-{instance_type}"
+        err(f"Using instance name: {name}")
 
     ssh_dir = expanduser(ssh_dir)
     if not key_name:
