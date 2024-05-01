@@ -17,9 +17,9 @@ defn awus aws_unset_profile
 defn ec2 aws ec2
 defn ecr aws ecr
 defn aed aws ec2 describe-instances
-defn aesi aws ec2 start-instances --instance-ids
-defn aepi aws ec2 stop-instances --instance-ids
-defn aeti aws ec2 terminate-instances --instance-ids
+defn eis aws ec2 start-instances --instance-ids
+defn eip aws ec2 stop-instances --instance-ids
+defn eit aws ec2 terminate-instances --instance-ids
 defn ecrc aws ecr create-repository --repository-name
 defn ecrd aws ecr delete-repository --repository-name
 defn s3 aws s3
@@ -89,7 +89,7 @@ instance() {
         | j1
 }
 export -f instance
-defn e2i instance
+defn ei instance
 
 instance_name() {
     instance "$@" | jq -r '.Tags[] | select(.Key == "Name") | .Value'
@@ -127,6 +127,47 @@ instance_security_groups() {
 }
 export -f instance_security_groups
 defn isgs instance_security_groups
+
+security_group_details() {
+    if [ $# -eq 0 ]; then
+        aws ec2 describe-security-groups
+    else
+        aws ec2 describe-security-groups --group-ids "$@"
+    fi \
+    | jq '.SecurityGroups[]'
+}
+export -f security_group_details
+defn sgv security_group_details
+
+security_groups() {
+    security_group_details "$@" | jq '{ GroupId, GroupName, Description, VpcId }'
+}
+export -f security_groups
+defn sg security_groups
+
+security_group_grep() {
+    if [ $# -ne 1 ]; then
+        echo "Usage: $0 <pattern>" >&2
+        return 1
+    fi
+    security_groups | jq 'select(.GroupName | test("'$1'"))'
+}
+export -f security_group_grep
+defn sgg security_group_grep
+
+security_group_delete() {
+    for arg in "$@"; do
+        if [ "${arg:0:2}" == sg- ]; then
+            echo "Deleting security group by ID: $arg" >&2
+            aws ec2 delete-security-group --group-id "$arg"
+        else
+            echo "Deleting security group by name: $arg" >&2
+            aws ec2 delete-security-group --group-name "$arg"
+        fi
+    done
+}
+export -f security_group_delete
+defn sgd security_group_delete
 
 instance_security_group() {
     instance_security_groups "$@" | singleton
@@ -249,33 +290,33 @@ check_buckets() {
 }
 
 ec2_describe_instances() {
-    if [ $# -gt 0 ]; then
-        args=(--instance-ids)
-        args+=("$@")
+    if [ $# -eq 0 ]; then
+        aws ec2 describe-instances \
+        | o1 Reservations \
+        | jq '.[].Instances[]'
     else
-        args=()
-    fi
-    if which parallel &>/dev/null; then
-        parallel -k 'aws ec2 describe-instances "${args[@]}" --instance-ids' ::: "$@"
-    else
-        if [ $# -gt 1 ]; then
-            echo 'Invoking `aws ec2 describe-instances` for each of '$#' instances, to ensure consistent ordering.' >&2
-            echo 'Recommend installing GNU Parallel for faster execution.' >&2
-        fi
-        for id in "$@"; do
-            aws ec2 describe-instances "${args[@]}" "$id"
-        done
+        if which parallel &>/dev/null; then
+            parallel -k 'aws ec2 describe-instances --instance-ids' ::: "$@"
+        else
+            if [ $# -gt 1 ]; then
+                echo 'Invoking `aws ec2 describe-instances` for each of '$#' instances, to ensure consistent ordering.' >&2
+                echo 'Recommend installing GNU Parallel for faster execution.' >&2
+            fi
+            for id in "$@"; do
+                aws ec2 describe-instances --instance-ids "$id"
+            done
+        fi \
+        | o1 Reservations \
+        | jq_filter \
+        | j1 .Instances \
+        | j1
     fi
 }
 export -f ec2_describe_instances
-defn aedi ec2_describe_instances
+defn eid ec2_describe_instances
 
 ec2_instances() {
     ec2_describe_instances "$@" \
-    | o1 Reservations \
-    | jq_filter \
-    | j1 .Instances \
-    | j1 \
     | jq '
         {
             Name: (.Tags[] | select(.Key == "Name") | .Value),
@@ -289,14 +330,24 @@ ec2_instances() {
     '
 }
 export -f ec2_instances
-defn aei ec2_instances
+defn ei ec2_instances
 ec2_instances_running() {
     ec2_instances "$@" | jq 'select(.State == "running")'
 }
 export -f ec2_instances_running
-defn aeir ec2_instances_running
+defn eir ec2_instances_running
 defn ecl ec2_instances
 defn e2l ec2_instances
+
+ec2_instance_grep() {
+    if [ $# -ne 1 ]; then
+        echo "Usage: ec2_instance_grep <pattern>" >&2
+        return 1
+    fi
+    ec2_instances | jq 'select(.Name | test("'$1'"))'
+}
+export -f ec2_instance_grep
+defn eig ec2_instance_grep
 
 ec2_dnsname() {
     ec2_instances "$@" | jq -r .PublicDnsName
@@ -316,13 +367,13 @@ watch_ec2_state() {
     watch ec2_state "$@"
 }
 export -f watch_ec2_state
-defn aewi watch_ec2_state
+defn eiw watch_ec2_state
 
 wait_ec2_state() {
     watch ec2_state "$@"
 }
 export -f wait_ec2_state
-defn wes wait_ec2_state
+defn eiww wait_ec2_state
 
 check_pipeline_execution() {
     usage="get_pipeline_execution [[pipeline_name=\$pipeline_name] pipeline_execution_id=\$pipeline_execution_id]"
@@ -546,6 +597,22 @@ amibdm() {
 }
 export -f amibdm
 
+ami_ebs_mount() {
+    if [ $# -ne 1 ]; then
+        echo "Usage: $0 <ami id>" >&2
+        return 1
+    fi
+    if [[ "$1" == i-* ]]; then
+        instance_id="$1"; shift
+        ami_id="$(instance_ami "$instance_id")"
+    else
+        ami_id="$1"; shift
+    fi
+    amibdm "$ami_id" | jq '.[] | select(has("Ebs"))' | j1rs .DeviceName
+}
+export -f ami_ebs_mount
+defn aem ami_ebs_mount
+
 ami_filter() {
     if [ $# -ne 2 ]; then
         echo "Usage: $0 <Name> <Values>" >&2
@@ -683,8 +750,7 @@ mnt_nvme() {
     sudo chown -R $USER:$USER "$mnt"
 }
 
-defn e2li launch_instance.py
-defn eli launch_instance.py
+defn eil launch_instance.py
 
 vpcs() {
     aws ec2 describe-vpcs | jq '.Vpcs[]'
@@ -728,4 +794,12 @@ ec2_key_pairs() {
     aws ec2 describe-key-pairs | jq -r '.KeyPairs[].KeyName'
 }
 export -f ec2_key_pairs
-defn e2kp ec2_key_pairs
+defn ek ec2_key_pairs
+
+alias ekd='aws ec2 delete-key-pair --key-name'
+
+ec2_keypair_grep() {
+    ec2_key_pairs | grep "$@"
+}
+export -f ec2_keypair_grep
+defn ekg ec2_keypair_grep
