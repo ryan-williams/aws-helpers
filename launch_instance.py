@@ -234,7 +234,8 @@ def main(
     )
 
     [instance_id] = [instance['InstanceId'] for instance in response['Instances']]
-    err(f'Launched instance: {", ".join(instance_id)}')
+    err(f'Launched instance:')
+    print(instance_id)
 
     if not ssh_user:
         image_name = image()['Name']
