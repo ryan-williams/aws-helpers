@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+set -e
+
+if [ $# -ne 1 ] && [ $# -ne 2 ]; then
+    echo "Usage: $0 <instance id> [basename (under ~/.ssh/include/)]" >&2
+    return 1
+fi
+
+instance="$1"; shift
+if [ $# -gt 0 ]; then
+    basename="$1"; shift
+else
+    basename="$instance"
+fi
+
+ssh_include_dir="$HOME/.ssh/include"
+mkdir -p "$ssh_include_dir"
+
+hostname="$(ec2_dnsname "$instance")"
+hostname_path="$ssh_include_dir/$basename"
+echo "HostName $hostname" | tee "$hostname_path"

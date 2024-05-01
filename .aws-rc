@@ -304,25 +304,7 @@ ec2_dnsname() {
 export -f ec2_dnsname
 defn edn ec2_dnsname
 
-ec2_ssh_hostname() {
-    if [ $# -ne 1 ] && [ $# -ne 2 ]; then
-        echo "Usage: ec2_ssh_hostname <instance id> [basename (under ~/.ssh/include/)]" >&2
-        return 1
-    fi
-    local instance="$1"; shift
-    if [ $# -gt 0 ]; then
-        local basename="$1"; shift
-    else
-        local basename="$instance"
-    fi
-    local hostname="$(ec2_dnsname "$instance")"
-    local ssh_include_dir="$HOME/.ssh/include"
-    mkdir -p "$ssh_include_dir"
-    hostname_path="$ssh_include_dir/$basename"
-    echo "HostName $hostname" | tee "$hostname_path"
-}
-export -f ec2_ssh_hostname
-defn esh ec2_ssh_hostname
+defn esh ec2-ssh-hostname
 
 ec2_state() {
     aws ec2 describe-instances --instance-ids "$@" | jq '.Reservations[] | .Instances[] | .State'
