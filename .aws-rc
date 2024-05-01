@@ -102,17 +102,6 @@ instance_ebs_volume_ids() {
 }
 defn e2iv instance_ebs_volume_ids
 
-ebs_volumes() {
-    local volumes="$(aws ec2 describe-volumes --volume-ids "$@" | o1 .Volumes)"
-    if [ $# -eq 1 ]; then
-        echo "$volumes" | j1
-    else
-        echo "$volumes"
-    fi
-}
-defn e2vs ebs_volumes
-defn vols ebs_volumes
-
 instance_ami() {
     instance "$@" | jq -r .ImageId
 }
@@ -128,16 +117,37 @@ instance_security_groups() {
 export -f instance_security_groups
 defn isgs instance_security_groups
 
-security_group_details() {
+ec2_list() {
+    if [ $# -lt 2 ]; then
+        echo "Usage: ec2_list <ec2 subcommand> <ids flag> [...ids]" >&2
+        return 1
+    fi
+    subcmd="$1"; shift
+    ids_flag="$1"; shift
     if [ $# -eq 0 ]; then
-        aws ec2 describe-security-groups
+        aws ec2 $subcmd
     else
-        aws ec2 describe-security-groups --group-ids "$@"
-    fi \
+        if which parallel &>/dev/null; then
+            parallel -k "aws ec2 $subcmd --$ids_flag" ::: "$@"
+        else
+            if [ $# -gt 1 ]; then
+                echo 'Invoking `aws ec2 '$subcmd --$ids_flag'` for each of '$#' IDs, to ensure consistent ordering.' >&2
+                echo 'Recommend installing GNU Parallel for faster execution.' >&2
+            fi
+            for id in "$@"; do
+                aws ec2 $subcmd --$ids_flag "$id"
+            done
+        fi
+    fi
+}
+export -f ec2_list
+
+security_group_details() {
+    ec2_list describe-security-groups group-ids "$@" \
     | jq '.SecurityGroups[]'
 }
 export -f security_group_details
-defn sgv security_group_details
+defn sgd security_group_details
 
 security_groups() {
     security_group_details "$@" | jq '{ GroupId, GroupName, Description, VpcId }'
@@ -167,7 +177,7 @@ security_group_delete() {
     done
 }
 export -f security_group_delete
-defn sgd security_group_delete
+defn sgrm security_group_delete
 
 instance_security_group() {
     instance_security_groups "$@" | singleton
@@ -289,34 +299,16 @@ check_buckets() {
   | parallel 'aws s3 ls {} &>/dev/null && echo "Success: {}" || echo "Failure: {}"'
 }
 
-ec2_describe_instances() {
-    if [ $# -eq 0 ]; then
-        aws ec2 describe-instances \
-        | o1 Reservations \
-        | jq '.[].Instances[]'
-    else
-        if which parallel &>/dev/null; then
-            parallel -k 'aws ec2 describe-instances --instance-ids' ::: "$@"
-        else
-            if [ $# -gt 1 ]; then
-                echo 'Invoking `aws ec2 describe-instances` for each of '$#' instances, to ensure consistent ordering.' >&2
-                echo 'Recommend installing GNU Parallel for faster execution.' >&2
-            fi
-            for id in "$@"; do
-                aws ec2 describe-instances --instance-ids "$id"
-            done
-        fi \
-        | o1 Reservations \
-        | jq_filter \
-        | j1 .Instances \
-        | j1
-    fi
+ec2_instance_details() {
+    ec2_list describe-instances instance-ids "$@" \
+    | o1 Reservations \
+    | jq '.[].Instances[]'
 }
-export -f ec2_describe_instances
-defn eid ec2_describe_instances
+export -f ec2_instance_details
+defn eid ec2_instance_details
 
 ec2_instances() {
-    ec2_describe_instances "$@" \
+    ec2_instance_details "$@" \
     | jq '
         {
             Name: (.Tags[] | select(.Key == "Name") | .Value),
@@ -340,14 +332,63 @@ defn ecl ec2_instances
 defn e2l ec2_instances
 
 ec2_instance_grep() {
-    if [ $# -ne 1 ]; then
-        echo "Usage: ec2_instance_grep <pattern>" >&2
+    if [ $# -eq 0 ]; then
+        pattern="$USER"
+    elif [ $# -eq 1 ]; then
+        pattern="$1"; shift
+    else
+        echo "Usage: ec2_instance_grep [pattern=\$USER]" >&2
         return 1
     fi
-    ec2_instances | jq 'select(.Name | test("'$1'"))'
+    ec2_instances | jq 'select(.Name | test("'$pattern'"))'
 }
 export -f ec2_instance_grep
 defn eig ec2_instance_grep
+
+ec2_volume_details() {
+    ec2_list describe-volumes volume-ids "$@" \
+    | jq '.Volumes[]'
+}
+export -f ec2_volume_details
+defn evd ec2_volume_details
+
+ec2_volumes() {
+    ec2_volume_details "$@" \
+    | jq '
+        {
+            VolumeId,
+            Size,
+            State,
+            Attachments: [.Attachments[].InstanceId],
+            SnapshotId
+        }
+    '
+}
+export -f ec2_volumes
+defn ev ec2_volumes
+
+ec2_volume_grep() {
+    if [ $# -ne 1 ]; then
+        echo "Usage: ec2_volume_grep <pattern>" >&2
+        return 1
+    fi
+    ec2_volumes | jq 'select(.VolumeId | test("'$1'"))'
+}
+export -f ec2_volume_grep
+defn evg ec2_volume_grep
+
+ec2_instance_volume_ids() {
+    ec2_instance_details "$@" \
+    | jq -r '.BlockDeviceMappings[].Ebs?.VolumeId | select(.)'
+}
+export -f ec2_instance_volume_ids
+defn eivi ec2_instance_volume_ids
+
+ec2_instance_volumes() {
+    ec2_volumes "$(ec2_instance_volume_ids "$@")"
+}
+export -f ec2_instance_volumes
+defn eiv ec2_instance_volumes
 
 ec2_dnsname() {
     ec2_instances "$@" | jq -r .PublicDnsName
@@ -796,7 +837,7 @@ ec2_key_pairs() {
 export -f ec2_key_pairs
 defn ek ec2_key_pairs
 
-alias ekd='aws ec2 delete-key-pair --key-name'
+alias ekrm='aws ec2 delete-key-pair --key-name'
 
 ec2_keypair_grep() {
     ec2_key_pairs | grep "$@"
