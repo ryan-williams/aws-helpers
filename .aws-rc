@@ -167,7 +167,7 @@ defn sgg security_group_grep
 
 security_group_delete() {
     for arg in "$@"; do
-        if [ "${arg:0:2}" == sg- ]; then
+        if [ "${arg:0:3}" == sg- ]; then
             echo "Deleting security group by ID: $arg" >&2
             aws ec2 delete-security-group --group-id "$arg"
         else

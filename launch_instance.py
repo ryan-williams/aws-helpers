@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from os import chmod, environ
 from os.path import exists, expanduser, join
-from subprocess import check_call
+from subprocess import check_call, STDOUT
 from sys import stderr
 
 import boto3
@@ -51,7 +51,7 @@ def create_security_group(ec2, vpc_id, name, description=None, https_ingress=Fal
         VpcId=vpc_id,
     )
     security_group_id = response['GroupId']
-    print(f"Security Group Created: {security_group_id}")
+    err(f"Security Group Created: {security_group_id}")
 
     ssh_ingress_rule = {
         'IpProtocol': 'tcp',
@@ -158,7 +158,9 @@ def main(
         err(f"Using instance type from instance {instance_id}: {instance_type}")
 
     if not name:
-        user = environ['USER']
+        user = environ.get('EC2_USERNAME') or environ['USER']
+        if not user:
+            raise ValueError("Could not determine username from environment variables (EC2_USERNAME, USER)")
         name = f"{user}-{instance_type}"
         err(f"Using instance name: {name}")
 
@@ -269,7 +271,7 @@ Host {" ".join((instance_id,) + ssh_hostname_aliases)}
         err(ssh_config_entry)
 
     err(f"Fetching PublicDnsName + writing to ~/.ssh/include/{instance_id}:")
-    check_call(['ec2-ssh-hostname', instance_id])
+    check_call(['ec2-ssh-hostname', instance_id], stdout=stderr)
 
 
 if __name__ == '__main__':
