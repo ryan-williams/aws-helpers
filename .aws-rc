@@ -550,8 +550,10 @@ aws_make_bucket_public() {
     echo "Running: ${public_access_cmd[*]}" >&2
     "${public_access_cmd[@]}"
 
-    policy_cmd=(aws s3api put-bucket-policy --bucket $b --policy "{\"Id\":\"s3://$b-public\",\"Statement\":[{\"Sid\":\"s3://$b-public\",\"Action\":[\"s3:GetObject\"],\"Effect\":\"Allow\",\"Resource\":\"arn:aws:s3:::$b/*\",\"Principal\":{\"AWS\":[\"*\"]}}]}")
-    echo "Running: ${policy_cmd[*]}" >&2
+    policy="{\"Id\":\"s3://$b-public\",\"Statement\":[{\"Sid\":\"s3://$b-public\",\"Action\":[\"s3:GetObject\"],\"Effect\":\"Allow\",\"Resource\":\"arn:aws:s3:::$b/*\",\"Principal\":{\"AWS\":[\"*\"]}},{\"Sid\":\"s3://$b-public-list\",\"Action\":[\"s3:ListBucket\"],\"Effect\":\"Allow\",\"Resource\":\"arn:aws:s3:::$b\",\"Principal\":{\"AWS\":[\"*\"]}}]}"
+    policy_cmd=(aws s3api put-bucket-policy --bucket $b --policy)
+    echo "Running: ${policy_cmd[*]} '$(echo "$policy" | jq)'" >&2
+    policy_cmd+=("$policy")
     "${policy_cmd[@]}"
 
     # See also:
