@@ -58,6 +58,7 @@ aws_s3_ls_recursive() {
 }
 export -f aws_s3_ls_recursive
 defn alr aws_s3_ls_recursive
+defn alh aws s3 ls --recursive --human-readable
 defn alrh aws s3 ls --recursive --human-readable
 
 s3_content_type() {
@@ -237,14 +238,71 @@ alias aszx="aws s3 sync --size-only --exclude '*'"
 alias asxn="aws s3 sync --exclude '*' --dryrun"
 alias asnx="aws s3 sync --dryrun --exclude '*'"
 alias asnzx="aws s3 sync --dryrun --size-only --exclude '*'"
-alias asi="aws s3 sync --exclude '*' --include"
-alias asin="aws s3 sync --dryrun --exclude '*' --include"
-alias asni="aws s3 sync --dryrun --exclude '*' --include"
-alias asnzi="aws s3 sync --dryrun --size-only --exclude '*' --include"
-alias aszi="aws s3 sync --size-only --exclude '*' --include"
+aws_s3_sync_include() {
+    if [ $# -lt 2 ]; then
+        echo "Usage: $0 [--dryrun] [include...] <src> <dst>" >&2
+        return 1
+    fi
+    local dryrun=
+    local sizeonly=
+    local exact_timestamps=
+    local includes=()
+    while [ $# -gt 2 ]; do
+        case "$1" in
+            --dryrun) dryrun=--dryrun ;;
+            --size-only) sizeonly=--size-only ;;
+            --exact-timestamps) exact_timestamps=--exact-timestamps ;;
+            *) includes+=("$1") ;;
+        esac
+        shift
+    done
+    src="$1"; shift
+    dst="$1"; shift
+    if [ "$src" == s3:// ]; then
+        new_includes=()
+        local bkt=
+        if [ ${#includes[@]} -eq 0 ]; then
+            echo "Error: Must specify at least one include for top level sync" >&2
+            return 1
+        fi
+        for include in "${includes[@]}"; do
+            if [ -z "$bkt" ]; then
+                bkt="${include%%/*}"
+            elif [ "$bkt" != "${include%%/*}" ]; then
+                echo "Error: All includes must be in the same bucket: $bkt vs. $include" >&2
+                return 2
+            fi
+            key="${include#*/}"
+            new_includes+=("$key")
+        done
+        includes=("${new_includes[@]}")
+        src="s3://$bkt"
+        dst="${dst%/}/$bkt"
+    fi
+    local include_args=()
+    for include in "${includes[@]}"; do
+        include_args+=(--include "$include")
+    done
+    aws s3 sync $dryrun $sizeonly $exact_timestamps --exclude '*' "${include_args[@]}" "$src" "$dst"
+}
+export -f aws_s3_sync_include
+alias asi=aws_s3_sync_include
+alias asin="aws_s3_sync_include --dryrun"
+alias asni="aws_s3_sync_include --dryrun"
+alias asnzi="aws_s3_sync_include --dryrun --size-only"
+alias aszi="aws_s3_sync_include --size-only"
 # "When syncing from S3 to local… the default behavior is to ignore same-sized items unless the local version is newer than the S3 version." -`aws s3 sync help`
-alias ast="aws s3 sync --exact-timestamps --exclude '*' --include"
-alias astn="aws s3 sync --exact-timestamps --dryrun --exclude '*' --include"
+alias ast="aws_s3_sync_include --exact-timestamps"
+alias astn="aws_s3_sync_include --exact-timestamps --dryrun"
+
+aws_s3_mirror() {
+    aws_s3_sync_include "$@" s3:// s3/
+}
+export -f aws_s3_mirror
+alias asm=aws_s3_mirror
+alias asmn="aws_s3_mirror --dryrun"
+alias asmz="aws_s3_mirror --sizeonly"
+alias asmzn="aws_s3_mirror --sizeonly --dryrun"
 
 aws_ecr_list() {
   aws ecr describe-images --repository-name "$@"
