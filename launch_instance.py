@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from os import chmod, environ
 from os.path import exists, expanduser, join
-from subprocess import check_call, STDOUT
+from subprocess import check_call
 from sys import stderr
 
 import boto3
@@ -127,6 +127,7 @@ def main(
     ec2 = session.client('ec2')
 
     _instance = None
+
     def instance():
         nonlocal instance_id
         nonlocal _instance
@@ -143,6 +144,7 @@ def main(
         err(f"Using AMI from instance {instance_id}: {ami_id}")
 
     _image = None
+
     def image():
         nonlocal ami_id
         nonlocal _image
