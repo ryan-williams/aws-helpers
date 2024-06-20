@@ -283,7 +283,9 @@ aws_s3_sync_include() {
     for include in "${includes[@]}"; do
         include_args+=(--include "$include")
     done
-    aws s3 sync $dryrun $sizeonly $exact_timestamps --exclude '*' "${include_args[@]}" "$src" "$dst"
+    cmd=(aws s3 sync $dryrun $sizeonly $exact_timestamps --exclude '*' "${include_args[@]}" "$src" "$dst")
+    echo "${cmd[*]}" >&2
+    "${cmd[@]}"
 }
 export -f aws_s3_sync_include
 alias asi=aws_s3_sync_include
