@@ -284,7 +284,7 @@ aws_s3_sync_include() {
         include_args+=(--include "$include")
     done
     cmd=(aws s3 sync $dryrun $sizeonly $exact_timestamps --exclude '*' "${include_args[@]}" "$src" "$dst")
-    echo "${cmd[*]}" >&2
+    echo "Running: ${cmd[@]}" >&2
     "${cmd[@]}"
 }
 export -f aws_s3_sync_include
