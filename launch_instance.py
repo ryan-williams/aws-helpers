@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from os import chmod, environ
 from os.path import exists, expanduser, join
-from subprocess import check_call
+from subprocess import check_call, CalledProcessError, Popen, PIPE
 from sys import stderr
 
 import boto3
@@ -80,6 +80,7 @@ def create_security_group(ec2, vpc_id, name, description=None, https_ingress=Fal
 @command()
 @option('-A', '--ssh-hostname-alias', 'ssh_hostname_aliases', multiple=True, help='Hostname aliases to include in the generated SSH config file entry.')
 @option('-a', '--ami-id', help='The AMI ID to use for the instance.')
+@option('-C', '--no-copy-clipboard', is_flag=True, help='Do not copy the instance ID to the clipboard.')
 @option('-d', '--device-name', help='The device name for the root volume. By default, verifies a lone EBS volume in the AMI, and uses that "DeviceName".')
 @option('-g', '--security-group', help='The security group to use for the instance; one will ')
 @option('--security-group-description', '--sgd', help='The description of the security group (if one is created).')
@@ -102,6 +103,7 @@ def create_security_group(ec2, vpc_id, name, description=None, https_ingress=Fal
 def main(
         ssh_hostname_aliases,
         ami_id,
+        no_copy_clipboard,
         device_name,
         security_group,
         security_group_description,
@@ -274,6 +276,16 @@ Host {" ".join((instance_id,) + ssh_hostname_aliases)}
 
     err(f"Fetching PublicDnsName + writing to ~/.ssh/include/{instance_id}:")
     check_call(['ec2-ssh-hostname', instance_id], stdout=stderr)
+    if not no_copy_clipboard:
+        try:
+            proc = Popen(['xclip', '-selection', 'clipboard'], stdin=PIPE)
+            proc.communicate(input=instance_id.encode())
+        except FileNotFoundError:
+            try:
+                proc = Popen(['pbcopy'], stdin=PIPE)
+                proc.communicate(input=instance_id.encode())
+            except FileNotFoundError:
+                err("Could not copy instance ID to clipboard: xclip and pbcopy not found")
 
 
 if __name__ == '__main__':
