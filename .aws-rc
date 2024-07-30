@@ -936,3 +936,16 @@ ec2_keypair_grep() {
 }
 export -f ec2_keypair_grep
 defn ekg ec2_keypair_grep
+
+ecr_login() {
+    account="$(aws_account)"
+    region="$(aws configure get region)"
+    if [ -z "$region" ]; then
+        echo "Couldn't find an AWS region ("'`aws configure get region`'")" >&2
+        return 1
+    fi
+    aws ecr get-login-password --region "$region" | docker login --username AWS --password-stdin "$account.dkr.ecr.$region.amazonaws.com"
+    aws ecr get-login-password | docker login --username AWS --password-stdin "$@"
+}
+export -f ecr_login
+defn ecrl ecr_login
