@@ -769,6 +769,16 @@ ami_name_to_id() {
 export -f ami_name_to_id
 defn amin2i ami_name_to_id
 
+ubuntu_ami() {
+    # Adapted from: https://documentation.ubuntu.com/aws/en/latest/aws-how-to/instances/find-ubuntu-images/
+    # Also useful: https://cloud-images.ubuntu.com/locator/ec2/
+    local version="${1:-22.04}"; shift
+    local arch="${1:-amd64}"; shift
+    aws ssm get-parameters --names /aws/service/canonical/ubuntu/server/$version/stable/current/$arch/hvm/ebs-gp2/ami-id | jq -r '.Parameters[0].Value'
+}
+export -f ubuntu_ami
+defn uami ubuntu_ami
+
 defn ads aws cloudformation describe-stacks
 aws_stack_names() {
     aws cloudformation describe-stacks | jq -r '.Stacks[].StackName'
