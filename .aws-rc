@@ -959,3 +959,70 @@ ecr_login() {
 }
 export -f ecr_login
 defn ecrl ecr_login
+
+aws_mfa_arn() {
+    aws iam list-mfa-devices | o1 MFADevices | j1r .SerialNumber
+}
+export -f aws_mfa_arn
+defn amfa aws_mfa_arn
+
+aws_get_mfa_creds() {
+    if [ $# -ne 1 ]; then
+        echo "Usage: aws_get_mfa_creds <MFA code>" >&2
+        return 1
+    fi
+    code="$1"; shift
+    mfa_arn="$(aws_mfa_arn)"
+    if [ -z "$mfa_arn" ]; then
+        echo "No MFA device found" >&2
+        return 1
+    fi
+    aws sts get-session-token --serial-number "$mfa_arn" --token-code "$code" | jq .Credentials
+}
+
+aws_mfa_login() {
+    local verbose=
+    if [ "$1" == "-v" ]; then
+        verbose=1
+        shift
+    fi
+    if [ $# -ne 1 ]; then
+        echo "Usage: aws_mfa_login [-v] <MFA code>" >&2
+        return 1
+    fi
+    _aws_mfa_login_log() {
+        if [ -n "$verbose" ]; then
+            echo "$@" >&2
+        fi
+    }
+    local log=_aws_mfa_login_log
+    _aws_mfa_login_unset() {
+        if [ -n "$2" ]; then
+            $log "Unsetting: $1=$2"
+            unset $1
+        fi
+    }
+    local unset=_aws_mfa_login_unset
+    $unset AWS_ACCESS_KEY_ID "$AWS_ACCESS_KEY_ID"
+    $unset AWS_SECRET_ACCESS_KEY "$AWS_SECRET_ACCESS_KEY"
+    $unset AWS_SESSION_TOKEN "$AWS_SESSION_TOKEN"
+    $unset AWS_EXPIRATION "$AWS_EXPIRATION"
+    creds="$(aws_get_mfa_creds "$@")"
+    if [ -z "$creds" ]; then
+        echo "Failed to get MFA credentials" >&2
+        return 1
+    fi
+    export AWS_ACCESS_KEY_ID="$(echo "$creds" | jq -r .AccessKeyId)"
+    export AWS_SECRET_ACCESS_KEY="$(echo "$creds" | jq -r .SecretAccessKey)"
+    export AWS_SESSION_TOKEN="$(echo "$creds" | jq -r .SessionToken)"
+    export AWS_EXPIRATION="$(echo "$creds" | jq -r .Expiration)"
+    $log "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID"
+    $log "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY"
+    $log "AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN"
+    $log "AWS_EXPIRATION=$AWS_EXPIRATION"
+    unset -f $log
+    unset -f $unset
+}
+export -f aws_mfa_login
+defn aml aws_mfa_login
+defn amlv aws_mfa_login -v
