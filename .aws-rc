@@ -63,7 +63,7 @@ defn alrh aws s3 ls --recursive --human-readable
 
 s3_content_type() {
     if [ $# -ne 2 ]; then
-        echo "Usage: $0 [s3://]<bkt>/<key> <content-type>" >&2
+        echo "Usage: s3_content_type [s3://]<bkt>/<key> <content-type>" >&2
         return 1
     fi
     url="$1"; shift
@@ -81,7 +81,7 @@ defn s3ct s3_content_type
 
 instance() {
     if [ $# -ne 1 ]; then
-        echo "Usage: $0 <instance id>" >&2
+        echo "Usage: instance <instance id>" >&2
         return 1
     fi
     aws ec2 describe-instances --instance-ids "$1" \
@@ -158,7 +158,7 @@ defn sg security_groups
 
 security_group_grep() {
     if [ $# -ne 1 ]; then
-        echo "Usage: $0 <pattern>" >&2
+        echo "Usage: security_group_grep <pattern>" >&2
         return 1
     fi
     security_groups | jq 'select(.GroupName | test("'$1'"))'
@@ -211,7 +211,7 @@ aws_s3_cp() {
         echo "${cmd[*]}" >&2
         "${cmd[@]}"
     elif [ $# -eq 0 ]; then
-        echo "Usage: $0 <src> [...<src>] [dst=./]" >&2
+        echo "Usage: aws_s3_cp <src> [...<src>] [dst=./]" >&2
         return 1
     else
         dst="${@:(-1)}"
@@ -240,7 +240,7 @@ alias asnx="aws s3 sync --dryrun --exclude '*'"
 alias asnzx="aws s3 sync --dryrun --size-only --exclude '*'"
 aws_s3_sync_include() {
     if [ $# -lt 2 ]; then
-        echo "Usage: $0 [--dryrun] [include...] <src> <dst>" >&2
+        echo "Usage: aws_s3_sync_include [--dryrun] [include...] <src> <dst>" >&2
         return 1
     fi
     local dryrun=
@@ -631,7 +631,7 @@ defn apbc aws_put_bucket_cors
 
 aws_make_bucket_public() {
     if [ $# -ne 1 ]; then
-        echo "Usage: $0 <bkt>" >&2
+        echo "Usage: aws_make_bucket_public <bkt>" >&2
         return 1
     fi
     b="$1"; shift
@@ -732,7 +732,7 @@ export -f amibdm
 
 ami_ebs_mount() {
     if [ $# -ne 1 ]; then
-        echo "Usage: $0 <ami id>" >&2
+        echo "Usage: ami_ebs_mount <ami id>" >&2
         return 1
     fi
     if [[ "$1" == i-* ]]; then
@@ -748,7 +748,7 @@ defn aem ami_ebs_mount
 
 ami_filter() {
     if [ $# -ne 2 ]; then
-        echo "Usage: $0 <Name> <Values>" >&2
+        echo "Usage: ami_filter <Name> <Values>" >&2
         return 1
     fi
     Name="$1"; shift
@@ -760,7 +760,7 @@ defn amif ami_filter
 
 ami_name_to_id() {
     if [ $# -ne 1 ]; then
-        echo "Usage: $0 <Name>" >&2
+        echo "Usage: ami_name_to_id <Name>" >&2
         return 1
     fi
     name="$1"; shift
@@ -882,7 +882,7 @@ defn aisi summarize_instances
 
 mnt_nvme() {
     if [ $# -ne 2 ]; then
-        echo "Usage: $0 <device> <mountpoint>" >&2
+        echo "Usage: mnt_nvme <device> <mountpoint>" >&2
         return 1
     fi
     device="$1"; shift
@@ -917,7 +917,7 @@ defn dvpci default_vpc_id
 
 ec2_instance_set_security_group() {
     if [ $# -ne 2 ]; then
-        echo "Usage: $0 <instance id> <security group id>" >&2
+        echo "Usage: ec2_instance_set_security_group <instance id> <security group id>" >&2
         return 1
     fi
     instance_id="$1"; shift
