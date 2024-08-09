@@ -371,14 +371,14 @@ ec2_instances() {
     ec2_instance_details "$@" \
     | jq '
         {
-            Name: (.Tags[] | select(.Key == "Name") | .Value),
+            Name: (if .Tags then .Tags[] | select(.Key == "Name") | .Value else "" end),
             InstanceId,
             PublicDnsName,
             InstanceType,
             KeyName,
             State: .State.Name
         }
-        | with_entries(select(.value != ""))
+        | with_entries(select(.value != "" and .value != null))
     '
 }
 export -f ec2_instances
@@ -400,7 +400,7 @@ ec2_instance_grep() {
         echo "Usage: ec2_instance_grep [pattern=\$USER]" >&2
         return 1
     fi
-    ec2_instances | jq 'select(.Name | test("'$pattern'"))'
+    ec2_instances | jq 'select((.Name // "") | test("'$pattern'"))'
 }
 export -f ec2_instance_grep
 defn eig ec2_instance_grep
