@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from os import chmod, environ
 from os.path import exists, expanduser, join
-from subprocess import check_call, CalledProcessError, Popen, PIPE
+from subprocess import check_call, Popen, PIPE
 from sys import stderr
 
 import boto3
