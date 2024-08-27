@@ -5,6 +5,7 @@ from subprocess import check_call, Popen, PIPE
 from sys import stderr
 
 import boto3
+from botocore.exceptions import ClientError
 from click import command, option
 
 
@@ -45,35 +46,42 @@ def create_security_group(ec2, vpc_id, name, description=None, https_ingress=Fal
         vpc_id = default_vpc_id(ec2)
         err(f"Fetched default VPC ID: {vpc_id}")
 
-    response = ec2.create_security_group(
-        GroupName=name,
-        Description=description,
-        VpcId=vpc_id,
-    )
-    security_group_id = response['GroupId']
-    err(f"Security Group Created: {security_group_id}")
+    try:
+        response = ec2.create_security_group(
+            GroupName=name,
+            Description=description,
+            VpcId=vpc_id,
+        )
+        security_group_id = response['GroupId']
+        err(f"Security Group Created: {security_group_id}")
 
-    ssh_ingress_rule = {
-        'IpProtocol': 'tcp',
-        'FromPort': 22,
-        'ToPort': 22,
-        'IpRanges': [{'CidrIp': '0.0.0.0/0'}]
-    }
-    https_ingress_rule = {
-        'IpProtocol': 'tcp',
-        'FromPort': 443,
-        'ToPort': 443,
-        'IpRanges': [{'CidrIp': '0.0.0.0/0'}]
-    }
+        ssh_ingress_rule = {
+            'IpProtocol': 'tcp',
+            'FromPort': 22,
+            'ToPort': 22,
+            'IpRanges': [{'CidrIp': '0.0.0.0/0'}]
+        }
+        https_ingress_rule = {
+            'IpProtocol': 'tcp',
+            'FromPort': 443,
+            'ToPort': 443,
+            'IpRanges': [{'CidrIp': '0.0.0.0/0'}]
+        }
 
-    # Add a security group rule to allow SSH access
-    ec2.authorize_security_group_ingress(
-        GroupId=security_group_id,
-        IpPermissions=[
-            ssh_ingress_rule,
-            *([https_ingress_rule] if https_ingress else [])
-        ]
-    )
+        # Add a security group rule to allow SSH access
+        ec2.authorize_security_group_ingress(
+            GroupId=security_group_id,
+            IpPermissions=[
+                ssh_ingress_rule,
+                *([https_ingress_rule] if https_ingress else [])
+            ]
+        )
+    except ClientError:
+        response = ec2.describe_security_groups(GroupNames=[name])
+        [security_group] = response['SecurityGroups']
+        security_group_id = security_group['GroupId']
+        err(f"Using existing Security Group {security_group_id}:")
+
     return security_group_id
 
 
@@ -179,13 +187,14 @@ def main(
             key_name = f"{name}.pem"
             key_path = join(ssh_dir, key_name)
             if exists(key_path):
-                raise ValueError(f"Key pair file already exists: {key_path}")
-            response = ec2.create_key_pair(KeyName=key_name, KeyType='ed25519')
-            key_material = response['KeyMaterial']
-            with open(key_path, 'w') as f:
-                f.write(key_material)
-            chmod(key_path, 0o600)
-            err(f"Created key pair {key_name} at {key_path}")
+                err(f"Key pair file already exists: {key_path}")
+            else:
+                response = ec2.create_key_pair(KeyName=key_name, KeyType='ed25519')
+                key_material = response['KeyMaterial']
+                with open(key_path, 'w') as f:
+                    f.write(key_material)
+                chmod(key_path, 0o600)
+                err(f"Created key pair {key_name} at {key_path}")
 
     if not security_group:
         if instance_id:
