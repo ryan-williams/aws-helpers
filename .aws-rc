@@ -61,6 +61,12 @@ defn alr aws_s3_ls_recursive
 defn alh aws s3 ls --recursive --human-readable
 defn alrh aws s3 ls --recursive --human-readable
 
+aws_s3_ls_recursive_sizes() {
+  aws_s3_ls_recursive "$@" | cut -d' ' -f3-
+}
+export -f aws_s3_ls_recursive_sizes
+defn alrs aws_s3_ls_recursive_sizes
+
 s3_content_type() {
     if [ $# -ne 2 ]; then
         echo "Usage: s3_content_type [s3://]<bkt>/<key> <content-type>" >&2
