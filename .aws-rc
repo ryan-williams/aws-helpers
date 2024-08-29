@@ -303,6 +303,17 @@ alias aszi="aws_s3_sync_include --size-only"
 alias ast="aws_s3_sync_include --exact-timestamps"
 alias astn="aws_s3_sync_include --exact-timestamps --dryrun"
 
+aws_sync_print_sizes() {
+    local src="${@: -2:1}"
+    export src
+    aws_s3_sync_include --dryrun "$@" | \
+    perl -pe 's/.* download: (.*) to .*/\1/' | \
+    parallel -k -j0 --env PATH --env src 'size="$(aws s3 ls {} | tr -s " " " " | cut -d" " -f3)"; p={}; p=${p#$src}; printf "%d %s\n" "$size" "${p#/}"'
+}
+export -f aws_sync_print_sizes
+defn asps aws_sync_print_sizes
+defn aspz aws_sync_print_sizes --size-only
+
 aws_s3_mirror() {
     aws_s3_sync_include "$@" s3:// s3/
 }
