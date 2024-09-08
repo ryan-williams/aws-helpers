@@ -206,6 +206,38 @@ defn isgn instance_security_group_name
 
 defn arm aws s3 rm
 defn armr aws s3 rm --recursive
+defn armrn aws s3 rm --recursive --dryrun
+
+aws_s3_rm_includes() {
+    if [ $# -lt 1 ]; then
+        echo "Usage: aws_s3_rm_includes [--dryrun] [include...] <src> <dst>" >&2
+        return 1
+    fi
+    local dryrun=
+    local includes=()
+    while [ $# -gt 1 ]; do
+        case "$1" in
+            --dryrun) dryrun=--dryrun ;;
+            *) includes+=("$1") ;;
+        esac
+        shift
+    done
+    base="$1"; shift
+    if [ "$base" == s3:// ]; then
+        echo "Error: remove-includes from top level of S3 not supported" >&2
+        return 1
+    fi
+    local include_args=()
+    for include in "${includes[@]}"; do
+        include_args+=(--include "$include")
+    done
+    cmd=(aws s3 rm --recursive $dryrun --exclude '*' "${include_args[@]}" "$base")
+    echo "Running: ${cmd[@]}" >&2
+    "${cmd[@]}"
+}
+export -f aws_s3_rm_includes
+defn armi aws_s3_rm_includes
+defn armni aws_s3_rm_includes --dryrun
 
 aws_s3_cp() {
     if [ $# -eq 2 ]; then
