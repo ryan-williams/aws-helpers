@@ -189,6 +189,7 @@ def main(
             if exists(key_path):
                 err(f"Key pair file already exists: {key_path}")
             else:
+                err(f"Creating key pair named {key_name}")
                 response = ec2.create_key_pair(KeyName=key_name, KeyType='ed25519')
                 key_material = response['KeyMaterial']
                 with open(key_path, 'w') as f:
