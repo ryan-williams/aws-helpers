@@ -181,6 +181,13 @@ def main(
         if instance_id:
             key_name = instance()['KeyName']
             err(f"Using key pair from instance {instance_id}: {key_name}")
+            if not key_path:
+                for _ssh_dir in (ssh_dir, expanduser('~/.ssh')):
+                    key_path = join(_ssh_dir, f"{key_name}.pem")
+                    if exists(key_path):
+                        err(f"Found key pair file: {key_path}")
+                        break
+                    key_path = None
         else:
             if key_path:
                 raise ValueError("Would Create new key pair, but -K/--key-path was provided ")
