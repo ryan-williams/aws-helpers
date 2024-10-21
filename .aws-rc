@@ -329,8 +329,15 @@ export -f aws_s3_sync_include
 alias asi=aws_s3_sync_include
 alias asin="aws_s3_sync_include --dryrun"
 alias asni="aws_s3_sync_include --dryrun"
-alias asnzi="aws_s3_sync_include --dryrun --size-only"
 alias aszi="aws_s3_sync_include --size-only"
+alias aszin="aws_s3_sync_include --dryrun --size-only"
+alias asnzi="aws_s3_sync_include --dryrun --size-only"
+alias ai="aws_s3_sync_include --dryrun"
+alias ain="aws_s3_sync_include --dryrun"
+alias ani="aws_s3_sync_include --dryrun"
+alias azi="aws_s3_sync_include --size-only"
+alias azin="aws_s3_sync_include --dryrun --size-only"
+alias anzi="aws_s3_sync_include --dryrun --size-only"
 # "When syncing from S3 to local… the default behavior is to ignore same-sized items unless the local version is newer than the S3 version." -`aws s3 sync help`
 alias ast="aws_s3_sync_include --exact-timestamps"
 alias astn="aws_s3_sync_include --exact-timestamps --dryrun"
