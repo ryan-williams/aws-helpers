@@ -122,6 +122,9 @@ alias dvrd="dvc remote default"
 alias dvrl="dvc remote list"
 alias dvrm="dvc remote modify"
 
+alias dcas="dvc config core.autostage"
+alias dcast="dvc config core.autostage true"
+
 dvc_remote_get_url() {
     dvc remote list | grep "^$1" | awk '{print $2}' | perl -pe 's/s3:\//s3/'
 }
@@ -258,27 +261,14 @@ dvc_find_suffix() {
 export -f dvc_find_suffix
 defn dvfns dvc_find_suffix
 
-dvc_diff_file() {
-    if [ $# -ne 1 ]; then
-        echo "Usage: $0 <path to file or .dvc>" >&2
-        return 1
-    fi
-    d="$1"; shift
-    f="${d%.dvc}"
-    if [ "$d" == "$f" ]; then
-        d="${f}.dvc"
-    fi
-    local_cache_path="$(dvc_local_cache_path "$f")"
-    diff "$local_cache_path" "$f"
-}
-export -f dvc_diff_file
-defn dvdf dvc_diff_file
-
 dvc_remote_root() {
     dvc remote list "$@" | awk '{ print $2 }'
 }
 export -f dvc_remote_root
 defn dvrr dvc_remote_root
+
+defn dvd dvc-utils diff
+defn dvdv dvc-utils diff -v
 
 dvc_remote_blob_url() {
     if [ $# -eq 2 ]; then
@@ -300,3 +290,6 @@ dvc_remote_blob_url() {
 export -f dvc_remote_blob_url
 defn dvrbu dvc_remote_blob_url
 defn dvrp dvc_remote_blob_url
+
+# Used by dvc-utils (https://pypi.org/project/dvc-utils)
+export DVC_UTILS_CACHE_DIR=.dvc/cache
