@@ -1069,6 +1069,11 @@ aws_mfa_login() {
         fi
     }
     local unset=_aws_mfa_login_unset
+    _aws_creds_log() {
+      $log "$@"
+      echo "$@" >> ~/.aws/.env
+    }
+    local flog=_aws_creds_log
     $unset AWS_ACCESS_KEY_ID "$AWS_ACCESS_KEY_ID"
     $unset AWS_SECRET_ACCESS_KEY "$AWS_SECRET_ACCESS_KEY"
     $unset AWS_SESSION_TOKEN "$AWS_SESSION_TOKEN"
@@ -1082,12 +1087,13 @@ aws_mfa_login() {
     export AWS_SECRET_ACCESS_KEY="$(echo "$creds" | jq -r .SecretAccessKey)"
     export AWS_SESSION_TOKEN="$(echo "$creds" | jq -r .SessionToken)"
     export AWS_EXPIRATION="$(echo "$creds" | jq -r .Expiration)"
-    $log "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID"
-    $log "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY"
-    $log "AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN"
-    $log "AWS_EXPIRATION=$AWS_EXPIRATION"
+    $flog "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID"
+    $flog "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY"
+    $flog "AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN"
+    $flog "AWS_EXPIRATION=$AWS_EXPIRATION"
     unset -f $log
     unset -f $unset
+    unset -f $flog
 }
 export -f aws_mfa_login
 defn aml aws_mfa_login
