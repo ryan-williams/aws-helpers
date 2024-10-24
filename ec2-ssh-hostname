@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e
+set -eo pipefail
 
 if [ $# -ne 1 ] && [ $# -ne 2 ]; then
     echo "Usage: $0 <instance id> [basename (under ~/.ssh/include/)]" >&2
@@ -19,4 +19,5 @@ mkdir -p "$ssh_include_dir"
 
 hostname="$(ec2_dnsname "$instance")"
 hostname_path="$ssh_include_dir/$basename"
-echo "HostName $hostname" | tee "$hostname_path"
+echo "$instance, $hostname_path:" >&2
+echo "HostName $hostname" | tee "$hostname_path" >&2

@@ -24,6 +24,15 @@ defn ecrc aws ecr create-repository --repository-name
 defn ecrd aws ecr delete-repository --repository-name
 defn s3 aws s3
 
+ec2_instance_start_and_hostname() {
+    aws ec2 start-instances --instance-ids "$@"
+    for id in "$@"; do
+        ec2-ssh-hostname "$id"
+    done
+}
+export -f ec2_instance_start_and_hostname
+defn eish ec2_instance_start_and_hostname
+
 aws_help() {
   aws "$@" help
 }
