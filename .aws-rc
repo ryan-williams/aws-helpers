@@ -1087,10 +1087,12 @@ aws_mfa_login() {
     export AWS_SECRET_ACCESS_KEY="$(echo "$creds" | jq -r .SecretAccessKey)"
     export AWS_SESSION_TOKEN="$(echo "$creds" | jq -r .SessionToken)"
     export AWS_EXPIRATION="$(echo "$creds" | jq -r .Expiration)"
-    $flog "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID"
-    $flog "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY"
-    $flog "AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN"
-    $flog "AWS_EXPIRATION=$AWS_EXPIRATION"
+    mkdir -p ~/.aws
+    echo > ~/.aws/.env
+    $flog "export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID"
+    $flog "export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY"
+    $flog "export AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN"
+    $flog "export AWS_EXPIRATION=$AWS_EXPIRATION"
     unset -f $log
     unset -f $unset
     unset -f $flog
