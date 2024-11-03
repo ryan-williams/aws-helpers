@@ -154,12 +154,29 @@ defn drp dvc_relpath
 defn dvrlp dvc_relpath
 
 dvc_list_category() {
-    if [ $# -ne 1 ]; then
-        echo "Usage: $0 <category (i.e. unchanged, uncommitted.modified, uncommitted.deleted)>" >&2
+    if [ $# -eq 0 ]; then
+        echo "Usage: dvc_list_category <unchanged|uncommitted.modified|uncommitted.deleted|...> [patterns...]" >&2
         return 1
     fi
-    category="$1"
-    dvc data status --unchanged --json | jq -r "(.$category // [])[]" | sort
+    category="$1"; shift
+    relpath="$(dvc_relpath)"
+    dvc data status --unchanged --json | \
+    jq -r "(.$category // [])[]" | \
+    grep "^$relpath" | \
+    sed "s|^$relpath||" | \
+    sort | \
+    if [ $# -gt 0 ]; then
+        while read -r line; do
+            for pattern in "$@"; do
+                if [[ $line == $pattern ]]; then
+                    echo "$line"
+                    break
+                fi
+            done
+        done
+    else
+        cat
+    fi
 }
 export -f dvc_list_category
 defn dvla dvc_list_category committed.added
