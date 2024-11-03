@@ -223,6 +223,24 @@ export -f dvc_local_cache_path
 defn dvlp dvc_local_cache_path
 defn dvlcp dvc_local_cache_path
 
+dvc_local_cache_path_ref() {
+    if [ $# -ne 1 ]; then
+        echo "Usage: dvc_local_cache_path_ref <ref>:<path>" >&2
+        return 1
+    fi
+    ref="${1%:*}"
+    path="${1#*:}"
+    if [ "$ref" == "$path" ]; then
+        ref="HEAD"
+    fi
+    path="${path%.dvc}.dvc"
+    path="$(git relpath "$path")"
+    git show "$ref:$path" | dvc_local_cache_path
+}
+export -f dvc_local_cache_path_ref
+defn dvlpr dvc_local_cache_path_ref
+defn dpr dvc_local_cache_path_ref
+
 dvc_size() {
     if [ $# -eq 0 ]; then
         yq '.outs | map(.size)[] | add'
