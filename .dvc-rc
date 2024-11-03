@@ -61,49 +61,15 @@ defn dv2m dvc_to_md5
 defn dv5 dvc_to_md5
 
 # Diff
-dvc_diff() {
-    flags=()
-    for arg in "$@"; do
-        if [ "${arg:0:1}" == "-" ]; then
-            flags+=("$arg")
-            shift
-        else
-            break
-        fi
-    done
-    if [ $# -ne 2 ]; then
-        echo "Usage: dvc_diff [diff flags] <start..end> <path>" >&2
-        return 1
-    fi
-    ref="$1"; shift
-    path="$1"; shift
-    path="${path%.dvc}.dvc"
-
-    before="${ref%..*}"
-    before_md5="$(git show $before:$path | dvc_to_md5)"
-    before_path="$(dvc_mdf_cache_path "$before_md5")"
-
-    if [ "$before" == "$ref" ]; then
-        after=
-        after_md5="$(dvc_to_md5 "$path")"
-        after_path="${path%.dvc}"
-    else
-        after="${ref#*..}"
-        after_md5="$(git show $after:$path | dvc_to_md5)"
-        after_path="$(dvc_mdf_cache_path "$after_md5")"
-    fi
-
-    cmd=(diff "${flags[@]}" "$before_path" "$after_path")
-    echo "${cmd[*]}" >&2
-    "${cmd[@]}"
-}
-export -f dvc_diff
-defn dvd dvc_diff
-defn dvdh dvc_diff HEAD
-defn dvdph dvc_diff 'HEAD^..HEAD'
+defn dvd dvc-utils diff
+defn dvdr dvc-utils diff -r
+defn dvdv dvc-utils diff -v
+defn dvdh dvc-utils diff -r HEAD
+defn dvdph dvc-utils diff -r 'HEAD^..HEAD'
 defn dvdw dvc_diff -w
-defn dvdwh dvc_diff -w HEAD
-defn dvdwph dvc_diff -w 'HEAD^..HEAD'
+defn dvdwh dvc_diff -w -r HEAD
+defn dvdwph dvc_diff -w -r 'HEAD^..HEAD'
+defn dvud dvc-utils diff
 
 # ls
 alias dvl="dvc ls"
@@ -209,8 +175,6 @@ dvc_mdf_cache_path() {
 export -f dvc_mdf_cache_path
 defn dvmcp dvc_mdf_cache_path
 
-defn dvud dvc-utils diff
-
 dvc_local_cache_path() {
     if [ $# -eq 0 ]; then
         md5="$(dvc_to_md5)"
@@ -266,9 +230,6 @@ dvc_remote_root() {
 }
 export -f dvc_remote_root
 defn dvrr dvc_remote_root
-
-defn dvd dvc-utils diff
-defn dvdv dvc-utils diff -v
 
 dvc_remote_blob_url() {
     if [ $# -eq 2 ]; then
