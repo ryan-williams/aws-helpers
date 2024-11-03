@@ -140,6 +140,19 @@ defn dvsjq dvc_data_status_unchanged_jq
 alias dvsa="dvc data status --unchanged"
 alias dvsu="dvc data status --unchanged"
 
+dvc_relpath() {
+    relpath="$(realpath "--relative-to=`dvc root`" .)"
+    if [ "$relpath" = "." ]; then
+        relpath=
+    else
+        relpath="$relpath/"
+    fi
+    echo "$relpath"
+}
+export -f dvc_relpath
+defn drp dvc_relpath
+defn dvrlp dvc_relpath
+
 dvc_list_category() {
     if [ $# -ne 1 ]; then
         echo "Usage: $0 <category (i.e. unchanged, uncommitted.modified, uncommitted.deleted)>" >&2
