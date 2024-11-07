@@ -11,7 +11,10 @@ alias dvcggctl="dvc config --global cache.type reflink,symlink,hardlink,copy"
 
 # Checkout
 alias dvco="dvc checkout"
+alias dvcf="dvc checkout -f"
 alias dvcof="dvc checkout -f"
+alias dvcor="dvc checkout -R"
+alias dvcr="dvc checkout -R"
 alias dvcorl="dvc checkout --relink"
 
 # Fetch
@@ -62,6 +65,11 @@ defn dv5 dvc_to_md5
 
 # Diff
 defn dvd dvc-utils diff
+defn ddc dvc-utils diff -c
+defn ddcz dvc-utils diff -c -x '"gunzip -c"'
+defn ddcr dvc-utils diff -c -r
+defn ddr dvc-utils diff -r
+defn dvdc dvc-utils diff -c
 defn dvdr dvc-utils diff -r
 defn dvdv dvc-utils diff -v
 defn dvdh dvc-utils diff -r HEAD
