@@ -76,6 +76,12 @@ aws_s3_ls_recursive_sizes() {
 export -f aws_s3_ls_recursive_sizes
 defn alrs aws_s3_ls_recursive_sizes
 
+aws_s3_sum_size_human_readable() {
+    aws_s3_ls_recursive_sizes "$@" | awk '{print $1}' | jq -s add | numfmt --to=iec
+}
+export -f aws_s3_sum_size_human_readable
+defn ashs aws_s3_sum_size_human_readable
+
 s3_content_type() {
     if [ $# -ne 2 ]; then
         echo "Usage: s3_content_type [s3://]<bkt>/<key> <content-type>" >&2
