@@ -1,5 +1,5 @@
 alias dv=dvc
-alias dva="dvc add"
+defn dva dvc add
 
 # Config
 alias dvcg="dvc config"
@@ -10,12 +10,12 @@ alias dvcggct="dvc config --global cache.type"
 alias dvcggctl="dvc config --global cache.type reflink,symlink,hardlink,copy"
 
 # Checkout
-alias dvco="dvc checkout"
-alias dvcf="dvc checkout -f"
-alias dvcof="dvc checkout -f"
-alias dvcor="dvc checkout -R"
-alias dvcr="dvc checkout -R"
-alias dvcorl="dvc checkout --relink"
+defn dvco dvc checkout
+defn dvcf dvc checkout -f
+defn dvcof dvc checkout -f
+defn dvcor dvc checkout -R
+defn dvcr dvc checkout -R
+defn dvcorl dvc checkout --relink
 
 # Fetch
 alias dvf="dvc fetch"
@@ -66,6 +66,8 @@ defn dv5 dvc_to_md5
 # Diff
 defn dvd dvc-utils diff
 defn ddc dvc-utils diff -c
+defn ddcu1 dvc-utils diff -c -U1
+defn ddc1 dvc-utils diff -c -U1
 defn ddcz dvc-utils diff -c -x '"gunzip -c"'
 defn ddcr dvc-utils diff -c -r
 defn ddr dvc-utils diff -r
@@ -129,7 +131,9 @@ export -f dvc_remote_url
 defn dvru dvc_remote_url
 
 # Status
+alias ds="dvc data status"
 alias dvs="dvc data status"
+alias dsg="dvc data status --granular"
 alias dvsg="dvc data status --granular"
 
 alias dvscj="dvc data status --json"
@@ -187,10 +191,15 @@ dvc_list_category() {
     fi
 }
 export -f dvc_list_category
+defn dla dvc_list_category committed.added
 defn dvla dvc_list_category committed.added
+defn dlu dvc_list_category unchanged
 defn dvlu dvc_list_category unchanged
+defn dld dvc_list_category uncommitted.deleted
 defn dvld dvc_list_category uncommitted.deleted
+defn dlm dvc_list_category uncommitted.modified
 defn dvlm dvc_list_category uncommitted.modified
+defn dlt dvc_list_category not_in_cache
 defn dvlt dvc_list_category not_in_cache
 
 dvc_help() {
