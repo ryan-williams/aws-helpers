@@ -244,6 +244,7 @@ dvc_local_cache_path() {
     fi
 }
 export -f dvc_local_cache_path
+defn dlp dvc_local_cache_path
 defn dvlp dvc_local_cache_path
 defn dvlcp dvc_local_cache_path
 
