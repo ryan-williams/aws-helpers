@@ -54,6 +54,7 @@ dvc_to_md5() {
     else
         local spec
         for spec in "$@"; do
+            spec="${spec%.dvc}.dvc"
             if [[ "$spec" == *:* ]]; then
                 local cmd=(git show "$spec")
             else
@@ -71,6 +72,7 @@ dvc_to_md5() {
 export -f dvc_to_md5
 defn dv2m dvc_to_md5
 defn dv5 dvc_to_md5
+defn dpm dvc_to_md5
 
 # Diff
 defn dvd dvc-diff
