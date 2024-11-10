@@ -1,5 +1,6 @@
 alias dv=dvc
 defn dva dvc add
+defn da dvc add
 
 # Config
 alias dvcg="dvc config"
@@ -15,6 +16,8 @@ defn dvcf dvc checkout -f
 defn dvcof dvc checkout -f
 defn dvcor dvc checkout -R
 defn dvcr dvc checkout -R
+defn dcrf dvc checkout -R -f
+defn dvcrf dvc checkout -R -f
 defn dvcorl dvc checkout --relink
 
 # Fetch
@@ -95,8 +98,11 @@ alias dvps="dvc push"
 alias dvpt="dvc status"
 alias dvr="dvc remote"
 alias dvra="dvc remote add"
+alias dra="dvc remote add"
 alias dvrd="dvc remote default"
+alias drd="dvc remote default"
 alias dvrl="dvc remote list"
+alias drl="dvc remote list"
 alias dvrm="dvc remote modify"
 
 alias dcas="dvc config core.autostage"
