@@ -64,22 +64,23 @@ defn dv2m dvc_to_md5
 defn dv5 dvc_to_md5
 
 # Diff
-defn dvd dvc-utils diff
-defn ddc dvc-utils diff -c
-defn ddcu1 dvc-utils diff -c -U1
-defn ddc1 dvc-utils diff -c -U1
-defn ddcz dvc-utils diff -c -x '"gunzip -c"'
-defn ddcr dvc-utils diff -c -r
-defn ddr dvc-utils diff -r
-defn dvdc dvc-utils diff -c
-defn dvdr dvc-utils diff -r
-defn dvdv dvc-utils diff -v
-defn dvdh dvc-utils diff -r HEAD
-defn dvdph dvc-utils diff -r 'HEAD^..HEAD'
-defn dvdw dvc_diff -w
-defn dvdwh dvc_diff -w -r HEAD
-defn dvdwph dvc_diff -w -r 'HEAD^..HEAD'
-defn dvud dvc-utils diff
+defn dvd dvc-diff
+defn ddc dvc-diff -c
+defn ddcu1 dvc-diff -c -U1
+defn ddc1 dvc-diff -c -U1
+defn ddc1r dvc-diff -c -U1 -r
+defn ddcz dvc-diff -c -x '"gunzip -c"'
+defn ddcr dvc-diff -c -r
+defn ddr dvc-diff -r
+defn dvdc dvc-diff -c
+defn dvdr dvc-diff -r
+defn dvdv dvc-diff -v
+defn dvdh dvc-diff -r HEAD
+defn dvdph dvc-diff -r 'HEAD^..HEAD'
+defn dvdw dvc-diff -w
+defn dvdwh dvc-diff -w -r HEAD
+defn dvdwph dvc-diff -w -r 'HEAD^..HEAD'
+defn dvud dvc-diff
 
 # ls
 alias dvl="dvc ls"
