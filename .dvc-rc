@@ -52,13 +52,19 @@ dvc_to_md5() {
     if [ $# -eq 0 ]; then
         cat | yq -r '.outs[0].md5'
     else
-        for path in "$@"; do
-            num_outs="$(cat "$path" | yq -r '.outs | length')"
+        local spec
+        for spec in "$@"; do
+            if [[ "$spec" == *:* ]]; then
+                local cmd=(git show "$spec")
+            else
+                local cmd=(cat "$spec")
+            fi
+            num_outs="$("${cmd[@]}" | yq -r '.outs | length')"
             if [ "$num_outs" != "1" ]; then
-                echo "$path: found $num_outs outs, expected 1" >&2
+                echo "$spec: found $num_outs outs, expected 1" >&2
                 return 1
             fi
-            cat "$path" | yq -r '.outs[0].md5'
+            "${cmd[@]}" | yq -r '.outs[0].md5'
         done
     fi
 }
@@ -234,10 +240,8 @@ dvc_local_cache_path() {
         md5="$(dvc_to_md5)"
         dvc_mdf_cache_path "$md5"
     else
-        for arg in "$@"; do
-            d="$1"; shift
-            f="${d%.dvc}"
-            d="${f}.dvc"
+        for d in "$@"; do
+            d="${d%.dvc}.dvc"
             md5="$(dvc_to_md5 "$d")"
             dvc_mdf_cache_path "$md5"
         done
