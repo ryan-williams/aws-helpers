@@ -1106,3 +1106,16 @@ aws_mfa_login() {
 export -f aws_mfa_login
 defn aml aws_mfa_login
 defn amlv aws_mfa_login -v
+
+aws_eval_env() {
+    local path="$HOME/.aws/.env"
+    if ! [ -f "$path" ]; then
+        echo "No $path found" >&2
+        return 1
+    fi
+    eval "$(cat "$path")"
+}
+export -f aws_eval_env
+defn aee aws_eval_env
+defn awe aws_eval_env
+defn awpe aws_eval_env
