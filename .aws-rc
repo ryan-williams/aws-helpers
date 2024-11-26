@@ -775,6 +775,7 @@ aws_account() {
 export -f aws_account
 defn awa aws_account
 defn aws_region aws configure get region
+defn agr aws configure get region
 defn awr aws configure get region
 defn awsr aws configure set region
 
