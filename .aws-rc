@@ -1127,3 +1127,14 @@ export -f aws_eval_env
 defn aee aws_eval_env
 defn awe aws_eval_env
 defn awpe aws_eval_env
+
+aws_cp_env() {
+    ssh "$@" "mkdir -p .aws"
+    local last="${@: -1}"
+    set -- "${@:1:(($# - 1))}"
+    cmd=(scp "$@" ~/.aws/.env "$last:.aws/.env")
+    echo "${cmd[*]}" >&2
+    "${cmd[@]}"
+}
+export -f aws_cp_env
+defn ace aws_cp_env
