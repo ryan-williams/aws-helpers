@@ -1017,6 +1017,7 @@ ec2_key_pairs() {
 }
 export -f ec2_key_pairs
 defn ek ec2_key_pairs
+defn ekl ec2_key_pairs
 
 alias ekrm='aws ec2 delete-key-pair --key-name'
 
