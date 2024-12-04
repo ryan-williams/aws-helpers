@@ -504,15 +504,37 @@ ec2_volumes() {
 export -f ec2_volumes
 defn ev ec2_volumes
 
+ec2_refresh_token() {
+    local dir="$HOME/.aws"
+    local path="$dir/token"
+    if ! [ -f "$path" ] || ! [[ $(find "$path" -mmin -300) ]]; then
+        mkdir -p "$dir"
+        EC2_TOKEN="$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")"
+        if [ -z "$EC2_TOKEN" ]; then
+            echo "Error fetching EC2 token" >&2
+            return 1
+        fi
+        echo "$EC2_TOKEN" > "$path"
+        echo "New EC2 token saved to $path" >&2
+    else
+        EC2_TOKEN="$(cat "$path")"
+    fi
+    export EC2_TOKEN
+}
+export -f ec2_refresh_token
+defn ert ec2_refresh_token
+
 ec2_current_instance_metadata() {
+    ec2_refresh_token
+    local curl=(curl -s -H "X-aws-ec2-metadata-token: $EC2_TOKEN")
     if [ $# -eq 0 ]; then
         echo "Pass one or more of:" >&2
-        curl -s http://169.254.169.254/latest/meta-data >&2
+        "${curl[@]}" -s http://169.254.169.254/latest/meta-data >&2
         echo >&2
         return 1
     fi
     for arg in "$@"; do
-        curl -s http://169.254.169.254/latest/meta-data/$arg
+        "${curl[@]}" http://169.254.169.254/latest/meta-data/$arg
         echo
     done
 }
