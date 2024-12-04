@@ -542,19 +542,17 @@ export -f ec2_current_instance_metadata
 defn ecm ec2_current_instance_metadata
 defn ecim ec2_current_instance_metadata
 
-ec2_current_instance_id() {
-    ec2_current_instance_metadata instance-id
-}
-export -f ec2_current_instance_id
+defn ec2_current_instance_id ec2_current_instance_metadata instance-id
 defn eci ec2_current_instance_id
 defn ecid ec2_current_instance_id
 
-ec2_current_instance_type() {
-    ec2_current_instance_metadata instance-type
-}
-export -f ec2_current_instance_type
+defn ec2_current_instance_type ec2_current_instance_metadata instance-type
 defn ect ec2_current_instance_type
 defn ecit ec2_current_instance_type
+
+defn ec2_current_ami_id ec2_current_instance_metadata ami-id
+defn eca ec2_current_ami_id
+defn ecia ec2_current_ami_id
 
 ec2_volume_grep() {
     if [ $# -ne 1 ]; then
