@@ -554,6 +554,15 @@ defn ec2_current_ami_id ec2_current_instance_metadata ami-id
 defn eca ec2_current_ami_id
 defn ecia ec2_current_ami_id
 
+defn ec2_current_region ec2_current_instance_metadata placement/region
+defn ecrg ec2_current_region
+defn ecir ec2_current_region
+
+defn ec2_current_zone ec2_current_instance_metadata placement/availability-zone
+defn ecz ec2_current_zone
+defn ecaz ec2_current_zone
+defn eciz ec2_current_zone
+
 ec2_volume_grep() {
     if [ $# -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <pattern>" >&2
