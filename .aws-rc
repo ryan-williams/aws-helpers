@@ -283,6 +283,7 @@ defn s3cp aws_s3_cp
 
 defn asc aws-s3-cat
 defn asy aws s3 sync
+defn asyn aws s3 sync --dryrun
 defn asz aws s3 sync --size-only
 defn asn aws s3 sync --dryrun
 defn asnz aws s3 sync --dryrun --size-only
