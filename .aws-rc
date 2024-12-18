@@ -255,22 +255,27 @@ defn armi aws_s3_rm_includes
 defn armni aws_s3_rm_includes --dryrun
 
 aws_s3_cp() {
+    local recursive=()
+    if [ "$1" == -r ]; then
+        recursive=(--recursive)
+        shift
+    fi
     if [ $# -eq 2 ]; then
-        aws s3 cp "$@"
+        aws s3 cp "${recursive[@]}" "$@"
     elif [ $# -eq 1 ]; then
         src="$1"; shift
         dst="./$(basename "$src")"; shift
-        cmd=(aws s3 cp "$src" "$dst")
+        cmd=(aws s3 cp "${recursive[@]}" "$src" "$dst")
         echo "${cmd[*]}" >&2
         "${cmd[@]}"
     elif [ $# -eq 0 ]; then
-        echo "Usage: ${FUNCNAME[0]} <src> [...<src>] [dst=./]" >&2
+        echo "Usage: ${FUNCNAME[0]} [-r] <src> [...<src>] [dst=./]" >&2
         return 1
     else
         dst="${@:(-1)}"
         srcs=("${@:1:$(($#-1))}")
         for src in "${srcs[@]}"; do
-            cmd=(aws s3 cp "$src" "$dst")
+            cmd=(aws s3 cp "${recursive[@]}" "$src" "$dst")
             echo "${cmd[*]}" >&2
             "${cmd[@]}"
         done
@@ -278,6 +283,7 @@ aws_s3_cp() {
 }
 export -f aws_s3_cp
 defn acp aws_s3_cp
+defn acpr aws_s3_cp -r
 defn s3c aws_s3_cp
 defn s3cp aws_s3_cp
 
