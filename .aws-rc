@@ -548,6 +548,7 @@ defn eci ec2_current_instance_id
 defn ecid ec2_current_instance_id
 
 defn ec2_current_instance_type ec2_current_instance_metadata instance-type
+defn ait ec2_current_instance_type
 defn ect ec2_current_instance_type
 defn ecit ec2_current_instance_type
 
