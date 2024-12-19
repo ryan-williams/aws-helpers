@@ -55,10 +55,15 @@ defn ddcu1 dvc-diff -c -U1
 defn ddc1 dvc-diff -c -U1
 defn ddc1r dvc-diff -c -U1 -r
 defn ddcz dvc-diff -c -x '"gunzip -c"'
-defn ddcr dvc-diff -c -r
-defn ddr dvc-diff -r
+defn ddcc dvc-diff -c -R
+defn ddcr dvc-diff -c -R
+defn ddcrs dvc-diff -c -r
+defn ddr dvc-diff -R
+defn ddrs dvc-diff -r
 defn dvdc dvc-diff -c
-defn dvdr dvc-diff -r
+defn dvdcr dvc-diff -cr
+defn dvdr dvc-diff -R
+defn dvdrs dvc-diff -r
 defn dvdv dvc-diff -v
 defn dvdh dvc-diff -r HEAD
 defn dvdph dvc-diff -r 'HEAD^..HEAD'
@@ -289,6 +294,16 @@ defn dlpa dvc_local_cache_path
 defn dlpr dvc_local_cache_path -r
 defn dvlp dvc_local_cache_path -r
 defn dvlpa dvc_local_cache_path
+
+dvc_cat() {
+    if [ $# -ne 1 ]; then
+        echo "Usage: dvc_cat <path>" >&2
+        return 1
+    fi
+    cat "$(dvc_local_cache_path "$1")"
+}
+export -f dvc_cat
+defn dvct dvc_cat
 
 dvc_local_cache_path_ref() {
     if [ $# -ne 1 ]; then
