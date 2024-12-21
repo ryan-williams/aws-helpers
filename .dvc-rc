@@ -229,7 +229,14 @@ defn dv5 dvc_to_md5
 defn dpm dvc_to_md5
 
 dvc_cache_dir() {
-    local cache="$(dvc cache dir)"
+    local cache
+    if [ -n "$DVC_COMPUTE_CACHE_DIR" ]; then
+        # This is slow (≈1s); skip by default
+        cache="$(dvc cache dir)"
+    else
+        local git_root="$(git rev-parse --show-toplevel)"
+        cache="$git_root/.dvc/cache"
+    fi
     if [ "$1" = -r ]; then
         cache="$(realpath --relative-to=. "$cache")"
         shift
