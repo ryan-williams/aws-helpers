@@ -565,6 +565,7 @@ defn ecia ec2_current_ami_id
 defn ec2_current_region ec2_current_instance_metadata placement/region
 defn ecrg ec2_current_region
 defn ecir ec2_current_region
+defn egr ec2_current_region
 
 defn ec2_current_zone ec2_current_instance_metadata placement/availability-zone
 defn ecz ec2_current_zone
