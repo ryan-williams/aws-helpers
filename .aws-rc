@@ -532,6 +532,17 @@ ec2_refresh_token() {
 export -f ec2_refresh_token
 defn ert ec2_refresh_token
 
+ec2_rename_instance() {
+    if [ $# -ne 2 ]; then
+        echo "Usage: ${FUNC_NAME[0}} <id> <name>" >&2
+        return 1
+    fi
+    id="$1"; shift
+    name="$1"; shift
+    aws ec2 create-tags --resources $id --tags Key=Name,Value=$name
+}
+defn eri ec2_rename_instance
+
 ec2_current_instance_metadata() {
     ec2_refresh_token
     local curl=(curl -s -H "X-aws-ec2-metadata-token: $EC2_TOKEN")
