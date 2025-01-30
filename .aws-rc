@@ -129,6 +129,7 @@ instance_ami() {
 }
 export -f instance_ami
 defn isa instance_ami
+defn e2a instance_ami
 
 # Uses jq `singleton` helper from ../js
 instance_security_groups() {
