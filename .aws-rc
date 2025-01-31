@@ -903,7 +903,10 @@ ubuntu_ami() {
     # Also useful: https://cloud-images.ubuntu.com/locator/ec2/
     local version="${1:-24.04}"; shift
     local arch="${1:-amd64}"; shift
-    aws ssm get-parameters --names /aws/service/canonical/ubuntu/server/$version/stable/current/$arch/hvm/ebs-gp2/ami-id | jq -r '.Parameters[0].Value'
+    if [ "$arch" == arm ]; then
+        arch=arm64
+    fi
+    aws ssm get-parameters --names /aws/service/canonical/ubuntu/server/$version/stable/current/$arch/hvm/ebs-gp3/ami-id | jq -r '.Parameters[0].Value'
 }
 export -f ubuntu_ami
 defn uami ubuntu_ami
