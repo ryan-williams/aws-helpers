@@ -836,6 +836,18 @@ defn awr aws configure get region
 defn awsr aws configure set region
 
 ami() {
+    local amis=()
+    local id
+    for id in "$@"; do
+        if [[ $id =~ ^i-* ]]; then
+            local ami="$(instance_ami "$id")"
+            echo "Instance $id -> AMI $ami" >&2
+            amis+=("$ami")
+        else
+            amis+=("$id")
+        fi
+    done
+    set -- "${amis[@]}"
     if [ $# -eq 1 ]; then
         ami_id="$1"; shift
         aws ec2 describe-images --image-ids "$ami_id" | jq '.Images[0]'
