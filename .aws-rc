@@ -1112,12 +1112,26 @@ aws_mfa_arn() {
 export -f aws_mfa_arn
 defn amfa aws_mfa_arn
 
+aws_unset_env() {
+  local k v
+  for k in AWS_REGION AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN AWS_EXPIRATION; do
+    v=$(eval "echo \$$k")
+    if [ -n "$v" ]; then
+      echo "Unsetting: $k=$v" >&2
+      unset "$k"
+    fi
+  done
+}
+export -f aws_unset_env
+defn aue aws_unset_env
+
 aws_get_mfa_creds() {
     if [ $# -ne 1 ]; then
         echo "Usage: aws_get_mfa_creds <MFA code>" >&2
         return 1
     fi
     code="$1"; shift
+    aws_unset_env
     mfa_arn="$(aws_mfa_arn)"
     if [ -z "$mfa_arn" ]; then
         echo "No MFA device found" >&2
@@ -1126,65 +1140,89 @@ aws_get_mfa_creds() {
     aws sts get-session-token --serial-number "$mfa_arn" --token-code "$code" | jq .Credentials
 }
 
+aws_set_env() {
+  local verbose=
+  if [ "$1" == "-v" ]; then
+    verbose=1
+    shift
+  fi
+  if [ $# -eq 0 ]; then
+    creds="$(cat)"
+  elif [ $# -eq 1 ]; then
+    creds="$(cat "$1")"
+  else
+    echo "Usage: ${FUNCNAME[0]} [-v] [JSON path]" >&2
+    return 1
+  fi
+  if [ -z "$creds" ]; then
+    echo "Error loading creds" >&2
+    return 1
+  fi
+  if echo "$creds" | jq -e 'has("Credentials")' >/dev/null; then
+    creds="$(echo "$creds" | jq .Credentials)"
+  fi
+
+  _aws_creds_log() {
+    if [ -n "$verbose" ]; then
+      echo "$@" >&2
+    fi
+    "$@"
+    echo "$@" >> .aws/.env
+  }
+  local log=_aws_creds_log
+
+  mkdir -p .aws
+  echo > .aws/.env
+  $log export AWS_ACCESS_KEY_ID="$(echo "$creds" | jq -r .AccessKeyId)"
+  $log export AWS_SECRET_ACCESS_KEY="$(echo "$creds" | jq -r .SecretAccessKey)"
+  $log export AWS_SESSION_TOKEN="$(echo "$creds" | jq -r .SessionToken)"
+  $log export AWS_EXPIRATION="$(echo "$creds" | jq -r .Expiration)"
+  unset -f $log
+}
+export -f aws_set_env
+defn ase aws_set_env
+defn asev aws_set_env -v
+
 aws_mfa_login() {
     local verbose=
+    local opts=()
     if [ "$1" == "-v" ]; then
         verbose=1
+        opts+=(-v)
         shift
     fi
     if [ $# -ne 1 ]; then
         echo "Usage: aws_mfa_login [-v] <MFA code>" >&2
         return 1
     fi
-    _aws_mfa_login_log() {
-        if [ -n "$verbose" ]; then
-            echo "$@" >&2
-        fi
-    }
-    local log=_aws_mfa_login_log
-    _aws_mfa_login_unset() {
-        if [ -n "$2" ]; then
-            $log "Unsetting: $1=$2"
-            unset $1
-        fi
-    }
-    local unset=_aws_mfa_login_unset
-    _aws_creds_log() {
-      $log "$@"
-      echo "$@" >> ~/.aws/.env
-    }
-    local flog=_aws_creds_log
-    $unset AWS_ACCESS_KEY_ID "$AWS_ACCESS_KEY_ID"
-    $unset AWS_SECRET_ACCESS_KEY "$AWS_SECRET_ACCESS_KEY"
-    $unset AWS_SESSION_TOKEN "$AWS_SESSION_TOKEN"
-    $unset AWS_EXPIRATION "$AWS_EXPIRATION"
-    creds="$(aws_get_mfa_creds "$@")"
-    if [ -z "$creds" ]; then
-        echo "Failed to get MFA credentials" >&2
-        return 1
-    fi
-    export AWS_ACCESS_KEY_ID="$(echo "$creds" | jq -r .AccessKeyId)"
-    export AWS_SECRET_ACCESS_KEY="$(echo "$creds" | jq -r .SecretAccessKey)"
-    export AWS_SESSION_TOKEN="$(echo "$creds" | jq -r .SessionToken)"
-    export AWS_EXPIRATION="$(echo "$creds" | jq -r .Expiration)"
-    mkdir -p ~/.aws
-    echo > ~/.aws/.env
-    $flog "export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID"
-    $flog "export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY"
-    $flog "export AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN"
-    $flog "export AWS_EXPIRATION=$AWS_EXPIRATION"
-    unset -f $log
-    unset -f $unset
-    unset -f $flog
+    aws_set_env "${opts[@]}" <(aws_get_mfa_creds "$@")
 }
 export -f aws_mfa_login
 defn aml aws_mfa_login
 defn amlv aws_mfa_login -v
 
+aws_assume_role() {
+  if [ $# -ne 2 ]; then
+    echo "Usage: ${FUNCNAME[0]} <role_arn> <session_name>" >&2
+    return 1
+  fi
+  role_arn="$1"; shift
+  session_name="$1"; shift
+  local creds="$(aws sts assume-role --role-arn "$role_arn" --role-session-name "$session_name")"
+  aws_set_env -v <(echo "$creds")
+}
+export -f aws_assume_role
+defn aar aws_assume_role
+
 aws_eval_env() {
-    local path="$HOME/.aws/.env"
+    local path=".aws/.env"
+    local path
+    local paths=(.aws/.env ~/.aws/.env)
+    for path in "${paths[@]}"; do
+      if [ -f "$path" ]; then break; fi
+    done
     if ! [ -f "$path" ]; then
-        echo "No $path found" >&2
+        echo "No path found: ${paths[*]}" >&2
         return 1
     fi
     eval "$(cat "$path")"
@@ -1194,11 +1232,21 @@ defn aee aws_eval_env
 defn awe aws_eval_env
 defn awpe aws_eval_env
 
+aws_print_env() {
+  env | grep '^AWS_'
+}
+export -f aws_print_env
+defn ape aws_print_env
+
 aws_cp_env() {
     ssh "$@" "mkdir -p .aws"
     local last="${@: -1}"
     set -- "${@:1:(($# - 1))}"
-    cmd=(scp "$@" ~/.aws/.env "$last:.aws/.env")
+    local f=.aws/.env
+    if ! [ -f "$f" ]; then
+      f=~/.aws.env
+    fi
+    cmd=(scp "$@" "$f" "$last:.aws/.env")
     echo "${cmd[*]}" >&2
     "${cmd[@]}"
 }
@@ -1232,3 +1280,5 @@ aws_secret_access_key = $AWS_SECRET_ACCESS_KEY" > "$path"
     fi
 }
 alias ae2c=aws_env_to_credentials
+
+defn alc aws eks list-clusters
