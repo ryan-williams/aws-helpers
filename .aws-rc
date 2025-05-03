@@ -11,9 +11,9 @@ aws_unset_profile() {
   unset AWS_PROFILE
 }
 export -f aws_unset_profile
-defn awpu aws_unset_profile
-defn awup aws_unset_profile
-defn awus aws_unset_profile
+defn apu aws_unset_profile
+defn apus aws_unset_profile
+defn aup aws_unset_profile
 
 defn ec2 aws ec2
 defn ecr aws ecr
