@@ -1219,17 +1219,36 @@ export -f aws_assume_role
 defn aar aws_assume_role
 
 aws_eval_env() {
-    local path=".aws/.env"
-    local path
-    local paths=(.aws/.env ~/.aws/.env)
-    for path in "${paths[@]}"; do
-      if [ -f "$path" ]; then break; fi
-    done
-    if ! [ -f "$path" ]; then
-        echo "No path found: ${paths[*]}" >&2
-        return 1
+  local path
+  local paths
+  if [ $# -eq 1 ]; then
+    if [ -d "$1" ]; then
+      path="$1/.aws/.env"
+    elif [ -f "$1" ]; then
+      path="$1"
+    else
+      echo "$1 doesn't exist" >&2
+      return 1
     fi
-    eval "$(cat "$path")"
+    if ! [ -f "$path" ]; then
+      echo "$path doesn't exist" >&2
+      return 1
+    fi
+    paths=("$path")
+  elif [ $# -eq 0 ]; then
+    paths=(.aws/.env ~/.aws/.env)
+  else
+    echo "Usage: ${FUNCNAME[0]} [dir]" >&2
+    return 1
+  fi
+  for path in "${paths[@]}"; do
+    if [ -f "$path" ]; then break; fi
+  done
+  if ! [ -f "$path" ]; then
+    echo "No path found: ${paths[*]}" >&2
+    return 1
+  fi
+  eval "$(cat "$path")"
 }
 export -f aws_eval_env
 defn aee aws_eval_env
