@@ -1305,3 +1305,8 @@ aws_secret_access_key = $AWS_SECRET_ACCESS_KEY" > "$path"
 alias ae2c=aws_env_to_credentials
 
 defn alc aws eks list-clusters
+
+defn av aws-vault
+defn ava aws-vault add
+defn ave aws-vault exec
+defn avl aws-vault list
