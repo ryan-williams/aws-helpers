@@ -29,7 +29,8 @@ Insert the MFA device ARN into `~/.aws/config`, along with configs like e.g.:
 ```ini
 # "base" profile + MFA
 [profile mfa]
-source_profile = base
+source_profile = base  # Or omit, to use `[default]` keypair
+duration_seconds = 43200  # Optional
 mfa_serial = # ‼️ Your MFA ARN here ‼️
 credential_process = aws-creds.py
 
