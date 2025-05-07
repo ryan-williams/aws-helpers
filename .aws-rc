@@ -1141,6 +1141,7 @@ aws_get_mfa_creds() {
     echo "${cmd[*]}" >&2
     "${cmd[@]}"
 }
+defn agmc aws_get_mfa_creds
 
 aws_set_env() {
   local verbose=
