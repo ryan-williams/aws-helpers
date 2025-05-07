@@ -1311,3 +1311,6 @@ defn av aws-vault
 defn ava aws-vault add
 defn ave aws-vault exec
 defn avl aws-vault list
+defn avr aws-vault remove
+defn avx aws-vault export
+defn avxj aws-vault export --format=json
