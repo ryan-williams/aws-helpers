@@ -1307,6 +1307,9 @@ alias ae2c=aws_env_to_credentials
 
 defn alc aws eks list-clusters
 
+defn alu aws iam list-users
+defn alk aws iam list-access-keys --user-name
+
 defn av aws-vault
 defn ava aws-vault add
 defn ave aws-vault exec
