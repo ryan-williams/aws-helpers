@@ -202,7 +202,7 @@ AWS_CREDS_NO_CACHE_LEVEL_VAR = 'AWS_CREDS_NO_CACHE_LEVEL'
 @command("aws-creds.py")
 @option('-C', '--no-cache', 'no_cache_level', count=True, help=f"0x: read and write creds from cache; 1x: skip reading, but write new creds; 2x: don't read or write creds. Falls back to ${AWS_CREDS_NO_CACHE_LEVEL_VAR} (should be \"0\", \"1\", or \"2\").")
 @option('-d', '--creds-dir', default=DEFAULT_CREDS_DIR, help=f"Directory to cache creds in; defaults to {DEFAULT_CREDS_DIR}")
-@option('-o', '--output-format', default='json', help='Output credentials as JSON ("j", "json") or shell ("s", "sh", "shell") formats')
+@option('-o', '--output-format', default='json', help='Output credentials as JSON ("j", "json"), shell ("s", "sh", "shell"), or env ("e", "env") formats')
 @option('-q', '--quiet', is_flag=True, help="Suppress logging to stderr")
 @option('-s', '--session-name', help="Session name (passed to `aws sts assume-role … --role-session-name`)")
 @argument("profile", required=False)
@@ -237,6 +237,10 @@ def main(
         creds['Version'] = 1
         json.dump(creds, stdout, indent=2)
         print()
+    elif output_format in ['e', 'env']:
+        envs = creds_to_envs(creds)
+        for k, v in envs.items():
+            print(f"{k}={v}")
 
 
 if __name__ == '__main__':
