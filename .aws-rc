@@ -1316,5 +1316,12 @@ alias ae2c=aws_env_to_credentials
 
 defn alc aws eks list-clusters
 
+aws_describe_cluster() {
+  local name="$1"; shift
+  aws eks describe-cluster --name "$name" "$@"
+}
+export -f aws_describe_cluster
+defn adc aws_describe_cluster
+
 defn alu aws iam list-users
 defn alk aws iam list-access-keys --user-name
