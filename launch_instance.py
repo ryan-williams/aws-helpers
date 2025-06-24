@@ -85,6 +85,18 @@ def create_security_group(ec2, vpc_id, name, description=None, https_ingress=Fal
     return security_group_id
 
 
+def get_key_path(key_name: str, ssh_dir: str | None) -> str | None:
+    default_ssh_dir = expanduser('~/.ssh')
+    ssh_dirs = { default_ssh_dir, ssh_dir } if ssh_dir else { default_ssh_dir }
+    for d in ssh_dirs:
+        key_paths = [ join(d, name) for name in [ key_name, f"{key_name}.pem" ] ]
+        for key_path in key_paths:
+            if exists(key_path):
+                err(f"Found key pair file: {key_path}")
+                return key_path
+    return None
+
+
 @command()
 @option('-A', '--ssh-hostname-alias', 'ssh_hostname_aliases', multiple=True, help='Hostname aliases to include in the generated SSH config file entry.')
 @option('-a', '--ami-id', help='The AMI ID to use for the instance.')
@@ -177,20 +189,25 @@ def main(
         err(f"Using instance name: {name}")
 
     ssh_dir = expanduser(ssh_dir)
-    if not key_name:
+    if key_name:
+        if not key_path:
+            key_path = get_key_path(key_name, ssh_dir)
+            if not key_path:
+                raise ValueError(f"Key pair file does not exist: {key_path}")
+            err(f"Using provided key pair file: {key_path}")
+        else:
+            if not exists(key_path):
+                raise ValueError(f"Key pair file does not exist: {key_path}")
+            err(f"Using provided key pair file: {key_path}")
+    else:
         if instance_id:
             key_name = instance()['KeyName']
             err(f"Using key pair from instance {instance_id}: {key_name}")
             if not key_path:
-                for _ssh_dir in (ssh_dir, expanduser('~/.ssh')):
-                    key_path = join(_ssh_dir, f"{key_name}.pem")
-                    if exists(key_path):
-                        err(f"Found key pair file: {key_path}")
-                        break
-                    key_path = None
+                key_path = get_key_path(key_name, ssh_dir)
         else:
             if key_path:
-                raise ValueError("Would Create new key pair, but -K/--key-path was provided ")
+                raise ValueError("Would create new key pair, but -K/--key-path was provided ")
             key_name = f"{name}.pem"
             key_path = join(ssh_dir, key_name)
             if exists(key_path):
