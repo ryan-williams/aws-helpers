@@ -17,7 +17,15 @@ fi
 ssh_include_dir="$HOME/.ssh/include"
 mkdir -p "$ssh_include_dir"
 
-hostname="$(ec2_dnsname "$instance")"
+while [ 1 ]; do
+  hostname="$(ec2_dnsname "$instance")"
+  if [ "$hostname" = null ]; then
+    echo "Found hostname $hostname, sleeping 1s then re-trying" >&2
+    sleep 1
+  else
+    break
+  fi
+done
 hostname_path="$ssh_include_dir/$basename"
 echo "$instance, $hostname_path:" >&2
 echo "HostName $hostname" | tee "$hostname_path" >&2
