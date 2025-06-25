@@ -109,28 +109,28 @@ def create_security_group(ec2, vpc_id, name, description=None, https_ingress=Fal
 @option('-v', '--vpc-id', help='The VPC ID to use for the security group.')
 @option('--volume-type', default='gp3', help='The volume type for the root volume.')
 def main(
-        ssh_hostname_aliases,
-        ami_id,
-        no_copy_clipboard,
-        device_name,
-        security_group,
-        security_group_description,
-        security_group_name,
-        no_https_ingress,
-        instance_type,
-        instance_id,
-        key_name,
-        key_path,
-        name,
-        profile,
-        region,
-        size,
-        ssh_dir,
-        tags,
-        no_delete_on_termination,
-        ssh_user,
-        vpc_id,
-        volume_type,
+    ssh_hostname_aliases,
+    ami_id,
+    no_copy_clipboard,
+    device_name,
+    security_group,
+    security_group_description,
+    security_group_name,
+    no_https_ingress,
+    instance_type,
+    instance_id,
+    key_name,
+    key_path,
+    name,
+    profile,
+    region,
+    size,
+    ssh_dir,
+    tags,
+    no_delete_on_termination,
+    ssh_user,
+    vpc_id,
+    volume_type,
 ):
     """Launch an EC2 instance."""
     session = boto3.Session(profile_name=profile, region_name=region)
@@ -267,7 +267,7 @@ def main(
 
     if not ssh_user:
         image_name = image()['Name']
-        if image_name.startswith('ubuntu'):
+        if image_name.startswith('ubuntu') or 'Ubuntu' in image_name:
             ssh_user = 'ubuntu'
         elif image_name.startswith('amzn'):
             ssh_user = 'ec2-user'
