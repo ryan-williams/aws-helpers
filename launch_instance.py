@@ -113,6 +113,7 @@ def get_key_path(key_name: str, ssh_dir: str | None) -> str | None:
 @option('-n', '--name', help='The name of the instance (tag "Key=Name,Value=<name>").')
 @option('-p', '--profile', help='The AWS profile to use.')
 @option('-r', '--region', help='The region to use.')
+@option('--rc', help='Path to rc file to append instance ID export (default: ~/.bashrc if it exists). Requires -A flag.')
 @option('-s', '--size', type=int, default=256, help='The size of the root volume (in GB).')
 @option('-S', '--ssh-dir', default='~/.ssh', help='The directory to store the key pair in (if one is created). Default: `~/.ssh`')
 @option('-t', '--tags', multiple=True, help='The tags to apply to the instance.')
@@ -136,6 +137,7 @@ def main(
     name,
     profile,
     region,
+    rc,
     size,
     ssh_dir,
     tags,
@@ -145,6 +147,10 @@ def main(
     volume_type,
 ):
     """Launch an EC2 instance."""
+    # Validate --rc flag requires -A flag
+    if rc and not ssh_hostname_aliases:
+        raise ValueError("--rc flag requires -A/--ssh-hostname-alias flag")
+
     session = boto3.Session(profile_name=profile, region_name=region)
     ec2 = session.client('ec2')
 
@@ -281,6 +287,27 @@ def main(
     [instance_id] = [instance['InstanceId'] for instance in response['Instances']]
     err(f'Launched instance:')
     print(instance_id)
+
+    # Handle --rc flag: append export line to rc file
+    if ssh_hostname_aliases:  # Only if -A flag is used
+        # Determine rc file path
+        if rc:
+            rc_path = expanduser(rc)
+        else:
+            # Default to ~/.bashrc if it exists
+            rc_path = expanduser('~/.bashrc')
+            if not exists(rc_path):
+                rc_path = None
+
+        if rc_path:
+            alias_name = ssh_hostname_aliases[0]  # Use first alias as variable name
+            export_line = f"export {alias_name}={instance_id}\n"
+
+            with open(rc_path, 'a') as f:
+                f.write(export_line)
+            err(f"Appended to {rc_path}: {export_line.strip()}")
+        elif rc:
+            err(f"RC file does not exist: {rc_path}")
 
     if not ssh_user:
         image_name = image()['Name']
