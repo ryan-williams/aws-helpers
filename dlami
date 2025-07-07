@@ -1,0 +1,79 @@
+#!/bin/bash
+
+set -euo pipefail
+
+usage() {
+    cat << EOF
+Usage: dlami [OPTIONS]
+
+Find Deep Learning AMI IDs with PyTorch support.
+
+OPTIONS:
+    -l              List several AMI IDs and Names in reverse-chron order
+    -p VERSION      PyTorch version (default: 2.7)
+    -u VERSION      Ubuntu version (default: 22.04)
+    -h              Show this help message
+
+By default, prints only the most recent AMI ID.
+EOF
+}
+
+# Default values
+list_mode=false
+pytorch_version="2.7"
+ubuntu_version="22.04"
+
+# Parse command line options
+while getopts "lp:u:h" opt; do
+    case $opt in
+        l)
+            list_mode=true
+            ;;
+        p)
+            pytorch_version="$OPTARG"
+            ;;
+        u)
+            ubuntu_version="$OPTARG"
+            ;;
+        h)
+            usage
+            exit 0
+            ;;
+        \?)
+            echo "Invalid option: -$OPTARG" >&2
+            usage >&2
+            exit 1
+            ;;
+        :)
+            echo "Option -$OPTARG requires an argument." >&2
+            usage >&2
+            exit 1
+            ;;
+    esac
+done
+
+shift $((OPTIND-1))
+
+# Build filters for AWS API
+filters=(
+    'Deep Learning OSS Nvidia*'
+    "*Ubuntu $ubuntu_version*"
+    "*PyTorch $pytorch_version*"
+)
+
+filter_args=()
+for filter in "${filters[@]}"; do
+    filter_args+=("Name=name,Values=$filter")
+done
+
+# Query AWS for AMI information
+aws ec2 describe-images \
+    --owners amazon \
+    --filters "${filter_args[@]}" \
+    --query 'reverse(sort_by(Images, &CreationDate))[*].{ImageId:ImageId,Name:Name}' \
+    --output json \
+    | if [ "$list_mode" = true ]; then
+        jq -r '.[] | (.ImageId + " " + .Name)'
+    else
+        jq -r '.[0].ImageId'
+    fi
