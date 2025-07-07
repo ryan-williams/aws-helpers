@@ -1327,3 +1327,29 @@ defn alu aws iam list-users
 defn alk aws iam list-access-keys --user-name
 
 defn aslg aws sso login
+
+dlami() {
+  local ubuntu=22.04
+  local pytorch=2.7
+  if [ $# -gt 0 ]; then
+    pytorch="$1"; shift
+  fi
+  if [ $# -gt 0 ]; then
+    ubuntu="$1"; shift
+  fi
+  local filters=(
+    'Deep Learning OSS Nvidia*'
+    "*Ubuntu $ubuntu*"
+    "*PyTorch $pytorch*"
+  )
+  local filter_args=()
+  for filter in "${filters[@]}"; do
+    filter_args+=("Name=name,Values=$filter")
+  done
+  aws ec2 describe-images \
+    --owners amazon \
+    --filters "${filter_args[@]}" \
+    --query 'reverse(sort_by(Images, &CreationDate))[*].{ImageId:ImageId,Name:Name}' \
+    --output json \
+    | jq -r '.[] | (.ImageId + " " + .Name)'
+}
