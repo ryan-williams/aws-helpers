@@ -23,6 +23,23 @@ defn eip aws ec2 stop-instances --instance-ids
 defn eit aws ec2 terminate-instances --instance-ids
 defn ecrc aws ecr create-repository --repository-name
 defn ecrd aws ecr delete-repository --repository-name
+
+ecr_repositories() {
+    aws ecr describe-repositories | jq '.repositories[]'
+}
+defn erd ecr_repositories
+defn ers ecr_repositories
+ecr_repository_names() {
+    ecr_repositories | jq -r .repositoryName
+}
+defn ern ecr_repository_names
+defn erns ecr_repository_names
+
+ecr_list_tagged_imgs() {
+    aws ecr list-images --repository-name "$1" --filter tagStatus=TAGGED | jq -r '.imageIds[].imageTag'
+}
+defn elti ecr_list_tagged_imgs
+
 defn s3 aws s3
 
 ec2_instance_start_and_hostname() {
