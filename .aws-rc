@@ -40,6 +40,26 @@ ecr_list_tagged_imgs() {
 }
 defn elti ecr_list_tagged_imgs
 
+ec2_describe_launch_templates() {
+  aws ec2 describe-launch-templates "$@" | jq '.LaunchTemplates[]'
+}
+defn edlt ec2_describe_launch_templates
+
+ec2_launch_template_names() {
+    ec2_describe_launch_templates "$@" | jq -r .LaunchTemplateName
+}
+defn eltn ec2_launch_template_names
+
+ec2_describe_compute_environments() {
+  aws batch describe-compute-environments "$@" | jq '.computeEnvironments[]'
+}
+defn edce ec2_describe_compute_environments
+
+ec2_compute_environment_names() {
+  ec2_describe_compute_environments "$@" | jq -r .computeEnvironmentName
+}
+defn ecen ec2_compute_environment_names
+
 defn s3 aws s3
 
 ec2_instance_start_and_hostname() {
