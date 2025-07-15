@@ -862,10 +862,13 @@ defn tfi terraform init
 defn tfp terraform plan
 defn tfpo terraform plan -o
 
-defn awai aws sts get-caller-identity
+aws_whoami() {
+  aws sts get-caller-identity --output json | cat
+}
+defn awai aws_whoami
 defn agci aws sts get-caller-identity
 aws_account() {
-    aws sts get-caller-identity --query Account --output text
+  aws sts get-caller-identity --query Account --output text
 }
 export -f aws_account
 defn awa aws_account
