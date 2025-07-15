@@ -1268,6 +1268,12 @@ aws_assume_role() {
 export -f aws_assume_role
 defn aar aws_assume_role
 
+aws_list_roles() {
+    aws iam list-roles | jq -r '.Roles[] | select(.AssumeRolePolicyDocument.Statement[0].Effect == "Allow") | .RoleName'
+}
+export -f aws_list_roles
+defn ailr aws_list_roles
+
 aws_eval_env() {
   local path
   local paths
