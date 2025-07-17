@@ -489,7 +489,7 @@ ec2_instances() {
     ec2_instance_details "$@" \
     | jq '
         {
-            Name: (if .Tags then .Tags[] | select(.Key == "Name") | .Value else "" end),
+            Name: ((.Tags // [])[] | select(.Key == "Name") | .Value) // "",
             InstanceId,
             PublicDnsName,
             InstanceType,
