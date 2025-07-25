@@ -204,30 +204,36 @@ ec2_list() {
 }
 export -f ec2_list
 
-security_group_details() {
+ec2_security_group_details() {
     ec2_list describe-security-groups group-ids "$@" \
     | jq '.SecurityGroups[]'
 }
-export -f security_group_details
-defn sgd security_group_details
+export -f ec2_security_group_details
+defn sgd ec2_security_group_details
+defn asgd ec2_security_group_details
+defn esgd ec2_security_group_details
 
-security_groups() {
-    security_group_details "$@" | jq '{ GroupId, GroupName, Description, VpcId }'
+ec2_security_groups() {
+    ec2_security_group_details "$@" | jq '{ GroupId, GroupName, Description, VpcId }'
 }
-export -f security_groups
-defn sg security_groups
+export -f ec2_security_groups
+defn sg ec2_security_groups
+defn asg ec2_security_groups
+defn esg ec2_security_groups
 
-security_group_grep() {
+ec2_security_group_grep() {
     if [ $# -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <pattern>" >&2
         return 1
     fi
     security_groups | jq 'select(.GroupName | test("'$1'"))'
 }
-export -f security_group_grep
-defn sgg security_group_grep
+export -f ec2_security_group_grep
+defn sgg ec2_security_group_grep
+defn asgg ec2_security_group_grep
+defn esgg ec2_security_group_grep
 
-security_group_delete() {
+ec2_security_group_delete() {
     for arg in "$@"; do
         if [ "${arg:0:3}" == sg- ]; then
             echo "Deleting security group by ID: $arg" >&2
@@ -238,8 +244,10 @@ security_group_delete() {
         fi
     done
 }
-export -f security_group_delete
-defn sgrm security_group_delete
+export -f ec2_security_group_delete
+defn sgrm ec2_security_group_delete
+defn asgr ec2_security_group_delete
+defn esgr ec2_security_group_delete
 
 instance_security_group() {
     instance_security_groups "$@" | singleton
