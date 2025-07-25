@@ -1281,6 +1281,7 @@ aws_list_roles() {
 }
 export -f aws_list_roles
 defn ailr aws_list_roles
+defn airl aws_list_roles
 
 aws_iam_get_role() {
     if [ $# -ne 1 ]; then
