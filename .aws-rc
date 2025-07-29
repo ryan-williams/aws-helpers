@@ -509,13 +509,20 @@ ec2_instances() {
 }
 export -f ec2_instances
 defn ei ec2_instances
+defn ecl ec2_instances
+defn e2l ec2_instances
+
 ec2_instances_running() {
     ec2_instances "$@" | jq 'select(.State == "running")'
 }
 export -f ec2_instances_running
 defn eir ec2_instances_running
-defn ecl ec2_instances
-defn e2l ec2_instances
+
+ec2_instances_running_or_shutting_down() {
+    ec2_instances "$@" | jq 'select(.State == "running" or .State == "shutting-down")'
+}
+export -f ec2_instances_running_or_shutting_down
+defn eirs ec2_instances_running_or_shutting_down
 
 ec2_instance_grep() {
     if [ $# -eq 0 ]; then
