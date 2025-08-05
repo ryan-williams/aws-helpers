@@ -512,11 +512,23 @@ defn ei ec2_instances
 defn ecl ec2_instances
 defn e2l ec2_instances
 
+ec2_instance_ids() {
+    ec2_instances "$@" | jq -r .InstanceId
+}
+export -f ec2_instance_ids
+defn eii ec2_instance_ids
+
 ec2_instances_running() {
     ec2_instances "$@" | jq 'select(.State == "running")'
 }
 export -f ec2_instances_running
 defn eir ec2_instances_running
+
+ec2_instances_running_ids() {
+    ec2_instances_running "$@" | jq -r .InstanceId
+}
+export -f ec2_instances_running_ids
+defn eiri ec2_instances_running_ids
 
 ec2_instances_running_or_shutting_down() {
     ec2_instances "$@" | jq 'select(.State == "running" or .State == "shutting-down")'
