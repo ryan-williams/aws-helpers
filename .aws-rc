@@ -536,6 +536,12 @@ ec2_instances_running_or_shutting_down() {
 export -f ec2_instances_running_or_shutting_down
 defn eirs ec2_instances_running_or_shutting_down
 
+ec2_instances_not_terminated() {
+    ec2_instances "$@" | jq 'select(.State != "terminated")'
+}
+export -f ec2_instances_not_terminated
+defn eint ec2_instances_not_terminated
+
 ec2_instance_grep() {
     if [ $# -eq 0 ]; then
         pattern="$USER"
