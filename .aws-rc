@@ -537,7 +537,7 @@ export -f ec2_instances_running_or_shutting_down
 defn eirs ec2_instances_running_or_shutting_down
 
 ec2_instances_not_terminated() {
-    ec2_instances "$@" | jq 'select(.State != "terminated")'
+    ec2_instances "$@" | jq 'select(.State != "terminated")' | jq -s 'sort_by(.State)'
 }
 export -f ec2_instances_not_terminated
 defn eint ec2_instances_not_terminated
