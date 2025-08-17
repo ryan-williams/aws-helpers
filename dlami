@@ -16,6 +16,7 @@ OPTIONS:
     -s              Show architecture in output
     -p VERSION      PyTorch version (default: 2.7)
     -u VERSION      Ubuntu version (default: 22.04)
+    -r REGION       AWS region (default: current region)
     -v              Verbose mode (show AWS query)
     -h              Show this help message
 
@@ -31,9 +32,10 @@ verbose=false
 pytorch_version="2.7"
 ubuntu_version="22.04"
 arch_filter=""
+region=""
 
 # Parse command line options
-while getopts "laAdsp:u:vh" opt; do
+while getopts "laAdsp:u:r:vh" opt; do
     case $opt in
         l) list_mode=true ;;
         a) arch_filter="arm64" ;;
@@ -42,6 +44,7 @@ while getopts "laAdsp:u:vh" opt; do
         s) show_arch=true ;;
         p) pytorch_version="$OPTARG" ;;
         u) ubuntu_version="$OPTARG" ;;
+        r) region="$OPTARG" ;;
         v) verbose=true ;;
         h)
             usage
@@ -117,12 +120,20 @@ if [ "$verbose" = true ]; then
     echo "Query: $query" >&2
 fi
 
+# Build AWS command with optional region
+aws_cmd=(aws ec2 describe-images)
+if [ -n "$region" ]; then
+    aws_cmd+=(--region "$region")
+fi
+aws_cmd+=(
+    --owners amazon
+    --filters "${filter_args[@]}"
+    --query "$query"
+    --output json
+)
+
 # Query AWS for AMI information
-result=$(aws ec2 describe-images \
-    --owners amazon \
-    --filters "${filter_args[@]}" \
-    --query "$query" \
-    --output json)
+result=$("${aws_cmd[@]}")
 
 if [ "$verbose" = true ]; then
     echo "Found $(echo "$result" | jq '. | length') AMIs" >&2
