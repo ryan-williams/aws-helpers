@@ -10,8 +10,13 @@ Find Deep Learning AMI IDs with PyTorch support.
 
 OPTIONS:
     -l              List several AMI IDs and Names in reverse-chron order
+    -a              ARM only (arm64 architecture)
+    -A              x86 only (x86_64 architecture, no ARM)
+    -d              Show detailed info (architecture, creation date)
+    -s              Show architecture in output
     -p VERSION      PyTorch version (default: 2.7)
     -u VERSION      Ubuntu version (default: 22.04)
+    -v              Verbose mode (show AWS query)
     -h              Show this help message
 
 By default, prints only the most recent AMI ID.
@@ -20,21 +25,24 @@ EOF
 
 # Default values
 list_mode=false
+show_arch=false
+show_details=false
+verbose=false
 pytorch_version="2.7"
 ubuntu_version="22.04"
+arch_filter=""
 
 # Parse command line options
-while getopts "lp:u:h" opt; do
+while getopts "laAdsp:u:vh" opt; do
     case $opt in
-        l)
-            list_mode=true
-            ;;
-        p)
-            pytorch_version="$OPTARG"
-            ;;
-        u)
-            ubuntu_version="$OPTARG"
-            ;;
+        l) list_mode=true ;;
+        a) arch_filter="arm64" ;;
+        A) arch_filter="x86_64" ;;
+        d) show_details=true ;;
+        s) show_arch=true ;;
+        p) pytorch_version="$OPTARG" ;;
+        u) ubuntu_version="$OPTARG" ;;
+        v) verbose=true ;;
         h)
             usage
             exit 0
@@ -55,25 +63,77 @@ done
 shift $((OPTIND-1))
 
 # Build filters for AWS API
-filters=(
-    'Deep Learning OSS Nvidia*'
-    "*Ubuntu $ubuntu_version*"
-    "*PyTorch $pytorch_version*"
-)
+# ARM64 AMIs have "ARM64" in the name, x86 AMIs don't
+if [ "$arch_filter" = "arm64" ]; then
+    filters=(
+        'Deep Learning ARM64*'
+        "*Ubuntu $ubuntu_version*"
+        "*PyTorch $pytorch_version*"
+    )
+elif [ "$arch_filter" = "x86_64" ]; then
+    filters=(
+        'Deep Learning OSS Nvidia*'
+        "*Ubuntu $ubuntu_version*"
+        "*PyTorch $pytorch_version*"
+    )
+else
+    # For all architectures, we need to search both patterns
+    # Unfortunately AWS filters don't support OR, so we'll handle this differently
+    filters=(
+        'Deep Learning*'
+        "*Ubuntu $ubuntu_version*"
+        "*PyTorch $pytorch_version*"
+    )
+fi
 
 filter_args=()
 for filter in "${filters[@]}"; do
     filter_args+=("Name=name,Values=$filter")
 done
 
+# Add architecture filter if specified
+if [ -n "$arch_filter" ]; then
+    filter_args+=("Name=architecture,Values=$arch_filter")
+fi
+
+# Build the query based on options
+if [ "$show_details" = true ]; then
+    query='reverse(sort_by(Images, &CreationDate))[*].{ImageId:ImageId,Name:Name,Architecture:Architecture,CreationDate:CreationDate}'
+    format='.[] | (.ImageId + " " + .Architecture + " " + .CreationDate + " " + .Name)'
+elif [ "$show_arch" = true ]; then
+    query='reverse(sort_by(Images, &CreationDate))[*].{ImageId:ImageId,Name:Name,Architecture:Architecture}'
+    format='.[] | (.ImageId + " " + .Architecture + " " + .Name)'
+else
+    query='reverse(sort_by(Images, &CreationDate))[*].{ImageId:ImageId,Name:Name}'
+    format='.[] | (.ImageId + " " + .Name)'
+fi
+
+# Show verbose info if requested
+if [ "$verbose" = true ]; then
+    echo "Filters:" >&2
+    for filter_arg in "${filter_args[@]}"; do
+        echo "  $filter_arg" >&2
+    done
+    echo "Query: $query" >&2
+fi
+
 # Query AWS for AMI information
-aws ec2 describe-images \
+result=$(aws ec2 describe-images \
     --owners amazon \
     --filters "${filter_args[@]}" \
-    --query 'reverse(sort_by(Images, &CreationDate))[*].{ImageId:ImageId,Name:Name}' \
-    --output json \
-    | if [ "$list_mode" = true ]; then
-        jq -r '.[] | (.ImageId + " " + .Name)'
+    --query "$query" \
+    --output json)
+
+if [ "$verbose" = true ]; then
+    echo "Found $(echo "$result" | jq '. | length') AMIs" >&2
+fi
+
+echo "$result" | if [ "$list_mode" = true ]; then
+    jq -r "$format"
+else
+    if [ "$show_details" = true ] || [ "$show_arch" = true ]; then
+        jq -r "$format" | head -1
     else
         jq -r '.[0].ImageId'
     fi
+fi
