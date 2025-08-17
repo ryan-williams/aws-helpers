@@ -114,7 +114,7 @@ def get_key_path(key_name: str, ssh_dir: str | None) -> str | None:
 @option('-p', '--profile', help='The AWS profile to use.')
 @option('-r', '--region', help='The region to use.')
 @option('--rc', help='Path to rc file to append instance ID export (default: ~/.bashrc if it exists). Requires -A flag.')
-@option('-s', '--size', type=int, default=256, help='The size of the root volume (in GB).')
+@option('-s', '--size', type=int, default=256, help='The size of the root volume (in GB; default: 256).')
 @option('-S', '--ssh-dir', default='~/.ssh', help='The directory to store the key pair in (if one is created). Default: `~/.ssh`')
 @option('-t', '--tags', multiple=True, help='The tags to apply to the instance.')
 @option('-T', '--no-delete-on-termination', is_flag=True, help='Do not delete the root volume on termination.')
