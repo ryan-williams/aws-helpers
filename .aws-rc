@@ -542,6 +542,14 @@ ec2_instances_not_terminated() {
 export -f ec2_instances_not_terminated
 defn eint ec2_instances_not_terminated
 
+ec2_instances_active_table() {
+  ec2_instances_not_terminated \
+  | jq -rc '.[] | [.State, .InstanceId, .PublicDnsName // "-", .Name, .InstanceType] | join(" ")' \
+  | column -t
+}
+export -f ec2_instances_active_table
+defn eiat ec2_instances_active_table
+
 ec2_instance_grep() {
     if [ $# -eq 0 ]; then
         pattern="$USER"
