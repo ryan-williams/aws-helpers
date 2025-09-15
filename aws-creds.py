@@ -1,4 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env -S uv run
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "boto3",
+#     "click",
+# ]
+# ///
 from datetime import datetime, timezone
 import json
 import re

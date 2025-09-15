@@ -1,4 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env -S uv run
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "boto3",
+#     "click",
+# ]
+# ///
 from os import chmod, environ
 from os.path import exists, expanduser, join
 from subprocess import check_call, Popen, PIPE

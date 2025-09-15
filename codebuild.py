@@ -1,4 +1,16 @@
-#!/usr/bin/env python
+#!/usr/bin/env -S uv run
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "boto3",
+#     "click",
+# ]
+# ///
+
+import os
+import sys
+# Add current directory to path for local imports
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import boto3
 from click import argument, option, group

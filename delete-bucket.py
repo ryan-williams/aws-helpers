@@ -1,4 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env -S uv run
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "boto3",
+# ]
+# ///
 
 from argparse import ArgumentParser
 import boto3
