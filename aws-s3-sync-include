@@ -1,0 +1,165 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.10"
+# dependencies = ["click"]
+# ///
+"""aws s3 sync with --include patterns, optimized to use the longest common
+literal prefix as part of the S3 source URL (avoiding full-bucket listing).
+
+When all includes are exact keys (no globs), uses `aws s3 cp` per file instead
+of `aws s3 sync`, avoiding directory listing entirely."""
+
+from os.path import commonprefix, exists, getmtime, getsize, join
+from subprocess import run
+from sys import exit, stderr
+
+from click import argument, command, option
+
+
+GLOB_CHARS = set("*?[")
+
+err = lambda *a, **kw: print(*a, file=stderr, **kw)
+
+
+def has_globs(pattern: str) -> bool:
+    return bool(GLOB_CHARS.intersection(pattern))
+
+
+def literal_prefix(pattern: str) -> str:
+    """Return the directory-aligned literal prefix of a glob pattern.
+
+    Returns everything up to (and including) the last `/` before the first glob
+    character.
+    """
+    pos = min((pattern.index(c) for c in GLOB_CHARS if c in pattern), default=len(pattern))
+    literal = pattern[:pos]
+    slash = literal.rfind("/")
+    return literal[: slash + 1] if slash >= 0 else ""
+
+
+def common_literal_prefix(includes: list[str]) -> str:
+    """Longest common literal prefix across all include patterns, trimmed to a
+    full path component boundary."""
+    if not includes:
+        return ""
+    literals = [literal_prefix(inc) for inc in includes]
+    prefix = commonprefix(literals)
+    slash = prefix.rfind("/")
+    return prefix[: slash + 1] if slash >= 0 else ""
+
+
+def extract_bucket(includes: list[str], src: str, dst: str) -> tuple[list[str], str, str]:
+    """When src is bare `s3://`, extract bucket name from include patterns."""
+    if src != "s3://":
+        return includes, src, dst
+    if not includes:
+        err("Error: Must specify at least one include for top level sync")
+        exit(1)
+    bkt = None
+    new_includes = []
+    for inc in includes:
+        b, _, key = inc.partition("/")
+        if bkt is None:
+            bkt = b
+        elif bkt != b:
+            err(f"Error: All includes must be in the same bucket: {bkt} vs. {b}")
+            exit(2)
+        new_includes.append(key)
+    return new_includes, f"s3://{bkt}", f"{dst.rstrip('/')}/{bkt}"
+
+
+def cp_files(
+    includes: list[str],
+    src: str,
+    dst: str,
+    dryrun: bool,
+    size_only: bool,
+    exact_timestamps: bool,
+):
+    """Use `aws s3 cp` for each exact file (no listing needed)."""
+    rc = 0
+    for key in includes:
+        s3_url = f"{src.rstrip('/')}/{key}"
+        local_path = f"{dst.rstrip('/')}/{key}"
+        if dryrun:
+            cmd = ["aws", "s3", "ls", s3_url]
+            err(f"Running: {' '.join(cmd)}")
+            result = run(cmd, capture_output=True, text=True)
+            if result.returncode == 0 and result.stdout.strip():
+                print(f"(dryrun) download: {s3_url} to {local_path}")
+            elif result.returncode != 0:
+                rc = result.returncode
+        else:
+            cmd = ["aws", "s3", "cp", s3_url, local_path]
+            err(f"Running: {' '.join(cmd)}")
+            result = run(cmd)
+            if result.returncode != 0:
+                rc = result.returncode
+    return rc
+
+
+def sync_with_prefix(
+    includes: list[str],
+    src: str,
+    dst: str,
+    dryrun: bool,
+    size_only: bool,
+    exact_timestamps: bool,
+):
+    """Use `aws s3 sync` with the longest common literal prefix promoted into
+    the source URL."""
+    prefix = common_literal_prefix(includes)
+    if prefix:
+        src = f"{src.rstrip('/')}/{prefix}"
+        dst = f"{dst.rstrip('/')}/{prefix}"
+        includes = [inc[len(prefix):].lstrip("/") or "*" for inc in includes]
+
+    cmd = ["aws", "s3", "sync"]
+    if dryrun:
+        cmd.append("--dryrun")
+    if size_only:
+        cmd.append("--size-only")
+    if exact_timestamps:
+        cmd.append("--exact-timestamps")
+    cmd.extend(["--exclude", "*"])
+    for inc in includes:
+        cmd.extend(["--include", inc])
+    cmd.extend([src, dst])
+
+    err(f"Running: {' '.join(cmd)}")
+    result = run(cmd)
+    return result.returncode
+
+
+@command
+@option("-n", "--dryrun", is_flag=True, help="Dry run (show what would be synced).")
+@option("-t", "--exact-timestamps", is_flag=True, help="Use exact timestamps for comparison.")
+@option("-z", "--size-only", is_flag=True, help="Compare only file sizes.")
+@argument("args", nargs=-1, required=True)
+def main(dryrun: bool, exact_timestamps: bool, size_only: bool, args: tuple[str, ...]):
+    """Sync S3 objects matching include patterns.
+
+    Usage: aws-s3-sync-include [OPTIONS] [INCLUDE...] SRC DST
+
+    When SRC is `s3://`, the bucket is extracted from the include patterns
+    (which must all share the same bucket prefix, e.g. `mybucket/path/key`).
+    """
+    if len(args) < 2:
+        err("Error: need at least SRC and DST arguments")
+        exit(1)
+
+    includes = list(args[:-2])
+    src = args[-2]
+    dst = args[-1]
+
+    includes, src, dst = extract_bucket(includes, src, dst)
+
+    if includes and all(not has_globs(inc) for inc in includes):
+        rc = cp_files(includes, src, dst, dryrun, size_only, exact_timestamps)
+    else:
+        rc = sync_with_prefix(includes, src, dst, dryrun, size_only, exact_timestamps)
+    exit(rc)
+
+
+if __name__ == "__main__":
+    main()

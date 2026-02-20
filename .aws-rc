@@ -347,53 +347,7 @@ alias asxn="aws s3 sync --exclude '*' --dryrun"
 alias asnx="aws s3 sync --dryrun --exclude '*'"
 alias asnzx="aws s3 sync --dryrun --size-only --exclude '*'"
 aws_s3_sync_include() {
-    if [ $# -lt 2 ]; then
-        echo "Usage: ${FUNCNAME[0]} [--dryrun] [include...] <src> <dst>" >&2
-        return 1
-    fi
-    local dryrun=
-    local sizeonly=
-    local exact_timestamps=
-    local includes=()
-    while [ $# -gt 2 ]; do
-        case "$1" in
-            --dryrun) dryrun=--dryrun ;;
-            --size-only) sizeonly=--size-only ;;
-            --exact-timestamps) exact_timestamps=--exact-timestamps ;;
-            *) includes+=("$1") ;;
-        esac
-        shift
-    done
-    src="$1"; shift
-    dst="$1"; shift
-    if [ "$src" == s3:// ]; then
-        new_includes=()
-        local bkt=
-        if [ ${#includes[@]} -eq 0 ]; then
-            echo "Error: Must specify at least one include for top level sync" >&2
-            return 1
-        fi
-        for include in "${includes[@]}"; do
-            if [ -z "$bkt" ]; then
-                bkt="${include%%/*}"
-            elif [ "$bkt" != "${include%%/*}" ]; then
-                echo "Error: All includes must be in the same bucket: $bkt vs. $include" >&2
-                return 2
-            fi
-            key="${include#*/}"
-            new_includes+=("$key")
-        done
-        includes=("${new_includes[@]}")
-        src="s3://$bkt"
-        dst="${dst%/}/$bkt"
-    fi
-    local include_args=()
-    for include in "${includes[@]}"; do
-        include_args+=(--include "$include")
-    done
-    cmd=(aws s3 sync $dryrun $sizeonly $exact_timestamps --exclude '*' "${include_args[@]}" "$src" "$dst")
-    echo "Running: ${cmd[@]}" >&2
-    "${cmd[@]}"
+    aws-s3-sync-include "$@"
 }
 export -f aws_s3_sync_include
 alias asi=aws_s3_sync_include
@@ -429,8 +383,8 @@ aws_s3_mirror() {
 export -f aws_s3_mirror
 alias asm=aws_s3_mirror
 alias asmn="aws_s3_mirror --dryrun"
-alias asmz="aws_s3_mirror --sizeonly"
-alias asmzn="aws_s3_mirror --sizeonly --dryrun"
+alias asmz="aws_s3_mirror --size-only"
+alias asmzn="aws_s3_mirror --size-only --dryrun"
 
 aws_ecr_list() {
   aws ecr describe-images --repository-name "$@"
@@ -1538,3 +1492,5 @@ defn alu aws iam list-users
 defn alk aws iam list-access-keys --user-name
 
 defn aslg aws sso login
+
+export s=s3:/
