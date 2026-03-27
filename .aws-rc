@@ -7,6 +7,17 @@ aws_profile() {
 }
 export -f aws_profile
 defn awp aws_profile
+
+_aws_profile_complete() {
+  local cur="${COMP_WORDS[COMP_CWORD]}"
+  local profiles
+  profiles=$(
+    grep '\[profile ' ~/.aws/config 2>/dev/null | sed 's/\[profile \(.*\)\]/\1/';
+    grep '^\[' ~/.aws/credentials 2>/dev/null | sed 's/\[\(.*\)\]/\1/'
+  )
+  COMPREPLY=($(compgen -W "$profiles" -- "$cur"))
+}
+complete -F _aws_profile_complete awp aws_profile
 aws_unset_profile() {
   unset AWS_PROFILE
 }
