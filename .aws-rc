@@ -75,13 +75,27 @@ defn ecen ec2_compute_environment_names
 defn s3 aws s3
 
 ec2_instance_start_and_hostname() {
+    local no_ssh=
+    if [ "$1" = "-n" ]; then no_ssh=1; shift; fi
     aws ec2 start-instances --instance-ids "$@"
+    local id
     for id in "$@"; do
         ec2-ssh-hostname "$id"
     done
+    if [ -z "$no_ssh" ] && [ $# -eq 1 ]; then
+        id="$1"
+        echo -n "Waiting for $id to accept SSH connections" >&2
+        while ! ssh -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=accept-new "$id" true 2>/dev/null; do
+            echo -n . >&2
+            sleep 3
+        done
+        echo >&2
+        ssh "$id"
+    fi
 }
 export -f ec2_instance_start_and_hostname
 defn eish ec2_instance_start_and_hostname
+defn eishn ec2_instance_start_and_hostname -n
 
 aws_help() {
   aws "$@" help
