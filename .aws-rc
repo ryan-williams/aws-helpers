@@ -97,6 +97,23 @@ export -f ec2_instance_start_and_hostname
 defn eish ec2_instance_start_and_hostname
 defn eishn ec2_instance_start_and_hostname -n
 
+ec2_resize() {
+    local no_ssh=()
+    if [ "$1" = "-n" ]; then no_ssh=(-n); shift; fi
+    if [ $# -ne 2 ]; then
+        echo "Usage: ec2_resize [-n] <instance id> <instance type>" >&2
+        return 1
+    fi
+    local id="$1" type="$2"
+    aws ec2 stop-instances --instance-ids "$id"
+    echo "Waiting for $id to stop…" >&2
+    aws ec2 wait instance-stopped --instance-ids "$id"
+    aws ec2 modify-instance-attribute --instance-id "$id" --instance-type "Value=$type"
+    ec2_instance_start_and_hostname "${no_ssh[@]}" "$id"
+}
+export -f ec2_resize
+defn erz ec2_resize
+
 aws_help() {
   aws "$@" help
 }
